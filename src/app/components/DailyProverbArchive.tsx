@@ -36,10 +36,10 @@ export default function DailyProverbArchive({ proverb }: { proverb: Proverb }) {
   }
 
   return (
-    <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-3xl p-8 mb-8 border border-amber-100 shadow-sm">
-      <h3 className={`text-center mb-8 ${lora.className}`}>
-        <span className="text-4xl font-bold text-emerald-600 font-serif">Today's Proverb</span>
-        <span className="text-2xl font-bold text-emerald-600">（今日の格言）</span>
+    <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-3xl p-6 md:p-8 mb-8 border border-amber-100 shadow-sm">
+      <h3 className={`text-center mb-6 md:mb-8 ${lora.className}`}>
+        <span className="block text-2xl md:text-4xl font-bold text-emerald-600 font-serif">Today's Proverb</span>
+        <span className="block text-lg md:text-2xl font-bold text-emerald-600 mt-1">今日の格言</span>
       </h3>
 
       <div className="flex items-start gap-3 mb-4">
