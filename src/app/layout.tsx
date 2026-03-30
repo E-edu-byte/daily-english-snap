@@ -79,8 +79,13 @@ export default function RootLayout({
           </main>
 
           <footer className="bg-white border-t border-stone-200 mt-12">
-            <div className="container mx-auto px-4 py-6 text-center text-sm text-[#eab308]">
-              <p>© 2026 Daily English Snap. Powered by E-edu</p>
+            <div className="container mx-auto px-4 py-6 text-center text-sm">
+              <div className="flex justify-center gap-4 mb-2">
+                <Link href="/privacy" className="text-stone-500 hover:text-[#eab308] transition-colors">
+                  プライバシーポリシー
+                </Link>
+              </div>
+              <p className="text-[#eab308]">© 2026 Daily English Snap. Powered by E-edu</p>
             </div>
           </footer>
         </div>
