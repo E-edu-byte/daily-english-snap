@@ -48,6 +48,52 @@ function getProverbForDate(date: Date) {
   return proverbs[index]
 }
 
+// フレーズリスト（穴埋めクイズ用）
+const phrases = [
+  { phrase: "Sounds good.", blankWord: "good" },
+  { phrase: "I'm on my way.", blankWord: "way" },
+  { phrase: "Let me check.", blankWord: "check" },
+  { phrase: "No worries.", blankWord: "worries" },
+  { phrase: "I'll get back to you.", blankWord: "back" },
+  { phrase: "That makes sense.", blankWord: "sense" },
+  { phrase: "I'm not sure.", blankWord: "sure" },
+  { phrase: "Could you say that again?", blankWord: "again" },
+  { phrase: "It depends.", blankWord: "depends" },
+  { phrase: "I'll figure it out.", blankWord: "figure" },
+  { phrase: "I'm looking forward to it.", blankWord: "forward" },
+  { phrase: "Let's keep in touch.", blankWord: "touch" },
+  { phrase: "I didn't catch that.", blankWord: "catch" },
+  { phrase: "You're telling me!", blankWord: "telling" },
+  { phrase: "I can't make it.", blankWord: "make" },
+  { phrase: "I'm running late.", blankWord: "running" },
+  { phrase: "What do you mean?", blankWord: "mean" },
+  { phrase: "That's a good point.", blankWord: "point" },
+  { phrase: "I'll take care of it.", blankWord: "care" },
+  { phrase: "I'm sorry to hear that.", blankWord: "sorry" },
+  { phrase: "Would you mind...?", blankWord: "mind" },
+  { phrase: "I'm working on it.", blankWord: "working" },
+  { phrase: "It's up to you.", blankWord: "up" },
+  { phrase: "I totally agree.", blankWord: "totally" },
+  { phrase: "Just in case.", blankWord: "case" },
+  { phrase: "I'm swamped.", blankWord: "swamped" },
+  { phrase: "Let's grab a coffee.", blankWord: "grab" },
+  { phrase: "I'm on the same page.", blankWord: "page" },
+  { phrase: "Fair enough.", blankWord: "enough" },
+  { phrase: "I've got to go.", blankWord: "got" },
+]
+
+// 日付からフレーズを取得
+function getPhraseForDate(date: Date) {
+  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000)
+  const index = (dayOfYear + 1) % phrases.length
+  return phrases[index]
+}
+
+// フレーズを穴埋め形式に変換
+function createBlankPhrase(phrase: string, blankWord: string): string {
+  return phrase.replace(blankWord, '???')
+}
+
 // 過去N日間の日付を取得
 function getPastDates(days: number) {
   const dates = []
@@ -130,6 +176,8 @@ export default function PastArchive() {
           const dateKey = formatDateForStorage(date)
           const isDone = doneStates[dateKey] || false
           const proverb = getProverbForDate(date)
+          const phraseData = getPhraseForDate(date)
+          const blankPhrase = createBlankPhrase(phraseData.phrase, phraseData.blankWord)
 
           return (
             <Link
@@ -153,8 +201,10 @@ export default function PastArchive() {
                   </p>
                 </div>
 
-                {/* スマホ版のスペーサー */}
-                <div className="flex-1 md:hidden"></div>
+                {/* スマホ版の穴埋めフレーズ */}
+                <div className="flex-1 md:hidden min-w-0">
+                  <p className="text-xs text-stone-500 truncate">{blankPhrase}</p>
+                </div>
 
                 {/* クイズ + Doneマーク */}
                 <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
