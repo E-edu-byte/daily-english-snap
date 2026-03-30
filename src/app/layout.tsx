@@ -15,6 +15,20 @@ export const metadata: Metadata = {
   verification: {
     google: '_0bILKnQoufY0oJ-FQRkW3KdJDtCOXls3NW5LWgjOvU',
   },
+  metadataBase: new URL('https://english.news-navi.jp'),
+  openGraph: {
+    title: 'Daily English Snap - 毎日届く実用英語フレーズ',
+    description: '穴埋めクイズで英語フレーズを楽しく学習！毎日更新される実用フレーズで英会話力アップ。',
+    url: 'https://english.news-navi.jp',
+    siteName: 'Daily English Snap',
+    locale: 'ja_JP',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Daily English Snap - 毎日届く実用英語フレーズ',
+    description: '穴埋めクイズで英語フレーズを楽しく学習！毎日更新される実用フレーズで英会話力アップ。',
+  },
 }
 
 // Quicksandフォントをエクスポート
