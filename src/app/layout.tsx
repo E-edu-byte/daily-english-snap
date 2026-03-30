@@ -42,15 +42,12 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        {/* Google AdSense 自動広告タグ（プレースホルダー） */}
-        {/* 本番環境で以下をアンコメントし、data-ad-client に自分のIDを設定してください */}
-        {/*
+        {/* Google AdSense */}
         <script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXX"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5844879039024261"
           crossOrigin="anonymous"
         ></script>
-        */}
       </head>
       <body className={inter.className}>
         <div className="min-h-screen flex flex-col bg-[#fafaf9]">
