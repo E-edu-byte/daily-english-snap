@@ -8,10 +8,9 @@ import { Lora } from 'next/font/google'
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
 
 // Supabase クライアント（サーバーサイド）
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 export const revalidate = 300 // 5分ごとに再検証
 
@@ -418,6 +417,11 @@ function getDailyPhrase() {
 }
 
 async function getLatestPhrase() {
+  // Supabaseが設定されていない場合はモックデータを使用
+  if (!supabase) {
+    return getDailyPhrase()
+  }
+
   try {
     const { data, error } = await supabase
       .from('phrases')
@@ -435,21 +439,6 @@ async function getLatestPhrase() {
   } catch {
     return getDailyPhrase()  // フォールバック：日付ベースで選択
   }
-}
-
-async function getRecentPhrases(limit = 30) {
-  const { data, error } = await supabase
-    .from('phrases')
-    .select('id, phrase, meaning, generated_at')
-    .order('generated_at', { ascending: false })
-    .limit(limit)
-
-  if (error) {
-    console.error('Error fetching recent phrases:', error)
-    return []
-  }
-
-  return data
 }
 
 export default async function Home() {
