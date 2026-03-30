@@ -241,6 +241,9 @@ export default function PastArchive({ pastPhrases = {} }: PastArchiveProps) {
           <span className="text-xs md:text-sm font-bold text-stone-900">学習記録</span>
         </Link>
       </div>
+      <p className="text-center text-xs text-stone-400 mt-3">
+        ※ブラウザのデータを消去すると、記録も削除されるのでご注意ください
+      </p>
     </section>
   )
 }

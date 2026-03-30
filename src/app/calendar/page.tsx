@@ -29,6 +29,9 @@ export default function CalendarPage() {
           毎日の学習記録を可視化して、継続のモチベーションを高めましょう。<br />
           フレーズを学習したら「Done」ボタンを押して記録を残せます。
         </p>
+        <p className="text-stone-400 text-xs mt-3">
+          ※ブラウザのデータを消去すると、記録も削除されるのでご注意ください
+        </p>
       </section>
 
       {/* カレンダー */}
