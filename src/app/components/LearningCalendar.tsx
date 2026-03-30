@@ -84,27 +84,27 @@ export default function LearningCalendar() {
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
   return (
-    <div className="bg-gradient-to-br from-white to-stone-50 rounded-3xl p-8 shadow-sm border-2 border-stone-200">
+    <div className="bg-gradient-to-br from-white to-stone-50 rounded-3xl p-4 md:p-8 shadow-sm border-2 border-stone-200">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <CalendarIcon className="w-6 h-6 text-[#ffed4e]" />
-          <h3 className="text-2xl font-bold text-[#eab308] font-serif">Learning Calendar</h3>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3 justify-center md:justify-start">
+          <CalendarIcon className="hidden md:block w-6 h-6 text-[#ffed4e]" />
+          <h3 className="text-xl md:text-2xl font-bold text-[#eab308] font-serif">Learning Calendar</h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-1 md:gap-2">
           <button
             onClick={() => changeMonth(-1)}
-            className="p-2 rounded-full hover:bg-amber-100 transition-colors"
+            className="p-1.5 md:p-2 rounded-full hover:bg-amber-100 transition-colors"
             aria-label="前の月"
           >
             <ChevronLeft className="w-5 h-5 text-stone-700" />
           </button>
-          <span className="text-lg font-semibold text-stone-800 min-w-[140px] text-center">
+          <span className="text-base md:text-lg font-semibold text-stone-800 min-w-[120px] md:min-w-[140px] text-center">
             {monthNames[month]} {year}
           </span>
           <button
             onClick={() => changeMonth(1)}
-            className="p-2 rounded-full hover:bg-amber-100 transition-colors"
+            className="p-1.5 md:p-2 rounded-full hover:bg-amber-100 transition-colors"
             aria-label="次の月"
           >
             <ChevronRight className="w-5 h-5 text-stone-700" />
