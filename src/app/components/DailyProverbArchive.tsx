@@ -69,7 +69,7 @@ export default function DailyProverbArchive({ proverb }: { proverb: Proverb }) {
         </div>
         <button
           onClick={speak}
-          className="p-3 hover:bg-amber-200 bg-amber-300/90 rounded-full transition-all hover-scale flex-shrink-0 self-start"
+          className="hidden md:block p-3 hover:bg-amber-200 bg-amber-300/90 rounded-full transition-all hover-scale flex-shrink-0 self-start"
           title="音声を再生"
         >
           <Volume2 className={`w-6 h-6 text-stone-900 ${isPlaying ? 'animate-pulse' : ''}`} />
