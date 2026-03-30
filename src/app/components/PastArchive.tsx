@@ -48,8 +48,8 @@ function getProverbForDate(date: Date) {
   return proverbs[index]
 }
 
-// フレーズリスト（穴埋めクイズ用）- archive/[date]/page.tsxと同じ10個
-const phrases = [
+// フレーズリスト（穴埋めクイズ用）- Supabaseにデータがない場合のフォールバック
+const fallbackPhrases = [
   { phrase: "Sounds good.", blankWord: "good" },
   { phrase: "I'm on my way.", blankWord: "way" },
   { phrase: "Let me check.", blankWord: "check" },
@@ -62,15 +62,16 @@ const phrases = [
   { phrase: "I'll figure it out.", blankWord: "figure" },
 ]
 
-// 日付からフレーズを取得
-function getPhraseForDate(date: Date) {
+// 日付からフォールバックフレーズを取得
+function getFallbackPhraseForDate(date: Date) {
   const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000)
-  const index = (dayOfYear + 1) % phrases.length
-  return phrases[index]
+  const index = (dayOfYear + 1) % fallbackPhrases.length
+  return fallbackPhrases[index]
 }
 
 // フレーズを穴埋め形式に変換
 function createBlankPhrase(phrase: string, blankWord: string): string {
+  if (!blankWord) return phrase
   return phrase.replace(blankWord, '???')
 }
 
@@ -86,7 +87,11 @@ function getPastDates(days: number) {
   return dates
 }
 
-export default function PastArchive() {
+interface PastArchiveProps {
+  pastPhrases?: Record<string, { phrase: string; blankWord: string }>
+}
+
+export default function PastArchive({ pastPhrases = {} }: PastArchiveProps) {
   const pastDates = getPastDates(7)  // 1週間分
   const [doneStates, setDoneStates] = useState<Record<string, boolean>>({})
 
@@ -115,6 +120,7 @@ export default function PastArchive() {
     return () => {
       window.removeEventListener('learningRecordsUpdated', handleUpdate)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const formatDate = (date: Date) => {
@@ -134,6 +140,15 @@ export default function PastArchive() {
 
   const formatDateForStorage = (date: Date) => {
     return formatDateForUrl(date)
+  }
+
+  // その日のフレーズを取得（Supabaseデータがあればそれを使用、なければフォールバック）
+  const getPhraseForDate = (date: Date) => {
+    const dateStr = formatDateForUrl(date)
+    if (pastPhrases[dateStr]) {
+      return pastPhrases[dateStr]
+    }
+    return getFallbackPhraseForDate(date)
   }
 
   return (

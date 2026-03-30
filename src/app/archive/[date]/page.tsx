@@ -1,6 +1,4 @@
-'use client'
-
-import { useParams } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import PhraseCard from '../../components/PhraseCard'
@@ -9,7 +7,14 @@ import { Lora } from 'next/font/google'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
 
-// ことわざリスト（DailyProverb.tsxと同じ）
+// Supabase クライアント
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
+
+export const revalidate = 300 // 5分ごとに再検証
+
+// ことわざリスト
 const proverbs = [
   { english: "Actions speak louder than words.", japanese: "行動は言葉よりも雄弁である" },
   { english: "The early bird catches the worm.", japanese: "早起きは三文の徳" },
@@ -43,7 +48,7 @@ const proverbs = [
   { english: "Every dog has its day.", japanese: "誰にでも全盛期がある" },
 ]
 
-// フレーズリスト（page.tsxのmockPhrasesと同じ構造）
+// モックフレーズ（Supabaseにデータがない場合のフォールバック）
 const mockPhrases = [
   {
     id: 'mock-1',
@@ -167,8 +172,8 @@ const mockPhrases = [
   },
 ]
 
-// 日付からフレーズを取得
-function getPhraseForDate(date: Date) {
+// 日付からモックフレーズを取得（フォールバック用）
+function getMockPhraseForDate(date: Date) {
   const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000)
   const index = (dayOfYear + 1) % mockPhrases.length
   const phrase = { ...mockPhrases[index] }
@@ -183,15 +188,56 @@ function getProverbForDate(date: Date) {
   return proverbs[index]
 }
 
-export default function ArchivePage() {
-  const params = useParams()
-  const dateStr = params.date as string
+// Supabaseからその日のフレーズを取得
+async function getPhraseForDate(dateStr: string) {
+  if (!supabase) {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    return getMockPhraseForDate(new Date(year, month - 1, day))
+  }
+
+  try {
+    // その日の開始と終了を計算（JST基準）
+    const startOfDay = `${dateStr}T00:00:00+09:00`
+    const endOfDay = `${dateStr}T23:59:59+09:00`
+
+    const { data, error } = await supabase
+      .from('phrases')
+      .select('*')
+      .gte('generated_at', startOfDay)
+      .lte('generated_at', endOfDay)
+      .order('generated_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (error || !data) {
+      // Supabaseにデータがない場合はモックを使用
+      const [year, month, day] = dateStr.split('-').map(Number)
+      return getMockPhraseForDate(new Date(year, month - 1, day))
+    }
+
+    // blank_word -> blankWord に変換
+    return {
+      ...data,
+      blankWord: data.blank_word
+    }
+  } catch {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    return getMockPhraseForDate(new Date(year, month - 1, day))
+  }
+}
+
+interface PageProps {
+  params: Promise<{ date: string }>
+}
+
+export default async function ArchivePage({ params }: PageProps) {
+  const { date: dateStr } = await params
 
   // 日付をパース (YYYY-MM-DD形式)
   const [year, month, day] = dateStr.split('-').map(Number)
   const date = new Date(year, month - 1, day)
 
-  const phrase = getPhraseForDate(date)
+  const phrase = await getPhraseForDate(dateStr)
   const proverb = getProverbForDate(date)
 
   const formatDate = (d: Date) => {
@@ -217,7 +263,7 @@ export default function ArchivePage() {
       {/* 日付ヘッダー */}
       <div className="text-center mb-8">
         <p className="text-stone-500 text-sm mb-2">アーカイブ</p>
-        <h1 className={`text-3xl font-bold text-stone-800 ${lora.className}`}>
+        <h1 className={`text-2xl md:text-3xl font-bold text-stone-800 ${lora.className}`}>
           {formatDate(date)}
         </h1>
       </div>
@@ -226,8 +272,8 @@ export default function ArchivePage() {
       <DailyProverbArchive proverb={proverb} />
 
       {/* フレーズ */}
-      <h2 className={`text-4xl font-bold text-emerald-600 font-serif mb-6 text-center ${lora.className}`}>
-        Today's quiz
+      <h2 className={`text-2xl md:text-4xl font-bold text-emerald-600 font-serif mb-6 text-center ${lora.className}`}>
+        Today&apos;s Quiz
       </h2>
       <PhraseCard phrase={phrase} date={dateStr} />
     </div>

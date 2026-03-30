@@ -445,8 +445,63 @@ async function getLatestPhrase() {
   }
 }
 
+// 過去7日分のフレーズを取得
+async function getPastPhrases() {
+  const pastPhrases: Record<string, { phrase: string; blankWord: string }> = {}
+
+  if (!supabase) {
+    return pastPhrases
+  }
+
+  try {
+    // 過去7日分の日付範囲を計算
+    const today = new Date()
+    const dates: string[] = []
+    for (let i = 1; i <= 7; i++) {
+      const date = new Date(today)
+      date.setDate(today.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+      dates.push(dateStr)
+    }
+
+    // 過去7日分のフレーズを取得
+    const sevenDaysAgo = new Date(today)
+    sevenDaysAgo.setDate(today.getDate() - 7)
+
+    const { data, error } = await supabase
+      .from('phrases')
+      .select('phrase, blank_word, generated_at')
+      .gte('generated_at', sevenDaysAgo.toISOString())
+      .order('generated_at', { ascending: false })
+
+    if (error || !data) {
+      return pastPhrases
+    }
+
+    // 日付ごとにフレーズをマッピング
+    data.forEach(item => {
+      const date = new Date(item.generated_at)
+      // JSTに変換
+      const jstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000)
+      const dateStr = jstDate.toISOString().split('T')[0]
+
+      if (!pastPhrases[dateStr]) {
+        pastPhrases[dateStr] = {
+          phrase: item.phrase,
+          blankWord: item.blank_word || ''
+        }
+      }
+    })
+
+    return pastPhrases
+  } catch {
+    return pastPhrases
+  }
+}
+
 export default async function Home() {
   const latestPhrase = await getLatestPhrase()
+  const pastPhrases = await getPastPhrases()
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -456,7 +511,7 @@ export default async function Home() {
         <DailyProverb />
 
         <h2 className={`text-4xl font-bold text-emerald-600 font-serif mb-6 ${lora.className}`}>
-          Today's quiz
+          Today&apos;s Quiz
         </h2>
       </section>
 
@@ -476,7 +531,7 @@ export default async function Home() {
       )}
 
       {/* 過去の格言、クイズ */}
-      <PastArchive />
+      <PastArchive pastPhrases={pastPhrases} />
 
     </div>
   )
