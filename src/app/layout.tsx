@@ -59,8 +59,7 @@ export default function RootLayout({
               <div className="flex items-center justify-between gap-2">
                 <Link href="/" className="hover:opacity-80 transition-opacity min-w-0 flex-1">
                   <h1 className={`text-lg md:text-3xl font-extrabold text-stone-900 ${lora.className} whitespace-nowrap`} style={{ textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-                    <span className="hidden sm:inline">📖 Daily English Snap</span>
-                    <span className="sm:hidden">📖 English Snap</span>
+                    📖 Daily English Snap
                   </h1>
                   <p className="text-xs md:text-base text-stone-800 mt-0.5 md:mt-1 font-medium pl-6 md:pl-11 whitespace-nowrap">
                     １日１回の英語トレーニング
