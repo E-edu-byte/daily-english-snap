@@ -1,0 +1,35 @@
+name: Generate Daily English Phrase
+
+on:
+  schedule:
+    # 日本時間 8:00 (UTC 23:00 前日) - 1日1回更新
+    - cron: '0 23 * * *'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate phrase and save to Supabase
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/generate.mjs
+
+      - name: Log completion
+        run: |
+          echo "✅ Phrase generation completed at $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S JST')"

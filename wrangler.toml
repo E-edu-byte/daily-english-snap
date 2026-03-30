@@ -1,0 +1,10 @@
+# Cloudflare Pages 設定（オプション）
+# 通常は Cloudflare Dashboard から設定しますが、
+# Wrangler CLI を使う場合はこのファイルを編集してください
+
+name = "daily-english-snap"
+compatibility_date = "2024-01-01"
+
+# 環境変数は Cloudflare Dashboard で設定してください
+# NEXT_PUBLIC_SUPABASE_URL
+# NEXT_PUBLIC_SUPABASE_ANON_KEY
