@@ -4,14 +4,17 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import PhraseCard from '@/app/components/PhraseCard'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 export const revalidate = 3600 // 1時間ごとに再検証
 
 async function getPhrase(id: string) {
+  if (!supabase) {
+    return null
+  }
+
   const { data, error } = await supabase
     .from('phrases')
     .select('*')

@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 // 連続日数を計算する関数
 function calculateStreak(dates: string[]): number {
@@ -47,6 +46,10 @@ function calculateStreak(dates: string[]): number {
 }
 
 async function getStreak() {
+  if (!supabase) {
+    return 0
+  }
+
   const { data, error } = await supabase
     .from('phrases')
     .select('generated_at')
