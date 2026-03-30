@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import PhraseCard from '../../components/PhraseCard'
 import DailyProverbArchive from '../../components/DailyProverbArchive'
+import PastArchive from '../../components/PastArchive'
 import { Lora } from 'next/font/google'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
@@ -226,6 +227,48 @@ async function getPhraseForDate(dateStr: string) {
   }
 }
 
+// 過去7日分のフレーズを取得
+async function getPastPhrases() {
+  const pastPhrases: Record<string, { phrase: string; blankWord: string }> = {}
+
+  if (!supabase) {
+    return pastPhrases
+  }
+
+  try {
+    const today = new Date()
+    const sevenDaysAgo = new Date(today)
+    sevenDaysAgo.setDate(today.getDate() - 7)
+
+    const { data, error } = await supabase
+      .from('phrases')
+      .select('phrase, blank_word, generated_at')
+      .gte('generated_at', sevenDaysAgo.toISOString())
+      .order('generated_at', { ascending: false })
+
+    if (error || !data) {
+      return pastPhrases
+    }
+
+    data.forEach(item => {
+      const date = new Date(item.generated_at)
+      const jstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000)
+      const dateStr = jstDate.toISOString().split('T')[0]
+
+      if (!pastPhrases[dateStr]) {
+        pastPhrases[dateStr] = {
+          phrase: item.phrase,
+          blankWord: item.blank_word || ''
+        }
+      }
+    })
+
+    return pastPhrases
+  } catch {
+    return pastPhrases
+  }
+}
+
 interface PageProps {
   params: Promise<{ date: string }>
 }
@@ -239,6 +282,7 @@ export default async function ArchivePage({ params }: PageProps) {
 
   const phrase = await getPhraseForDate(dateStr)
   const proverb = getProverbForDate(date)
+  const pastPhrases = await getPastPhrases()
 
   const formatDate = (d: Date) => {
     return d.toLocaleDateString('ja-JP', {
@@ -276,6 +320,9 @@ export default async function ArchivePage({ params }: PageProps) {
         Today&apos;s Quiz
       </h2>
       <PhraseCard phrase={phrase} date={dateStr} />
+
+      {/* 過去の格言・クイズ */}
+      <PastArchive pastPhrases={pastPhrases} />
     </div>
   )
 }
