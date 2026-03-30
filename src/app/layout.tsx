@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: 'Daily English Snap - 毎日届く実用英語フレーズ',
   description: '日常で即レスできる英語フレーズを、1日3回自動配信。例文とクイズで楽しく学習。',
   keywords: ['英語学習', '英会話', 'フレーズ', '例文', 'クイズ', 'Daily English'],
+  verification: {
+    google: '_0bILKnQoufY0oJ-FQRkW3KdJDtCOXls3NW5LWgjOvU',
+  },
 }
 
 // Quicksandフォントをエクスポート
