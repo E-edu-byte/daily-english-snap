@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap');
-
 :root {
   --foreground-rgb: 234, 179, 8; /* ゴールデンイエロー #eab308 */
   --background-ivory: 250, 250, 249; /* アイボリー #fafaf9 */
