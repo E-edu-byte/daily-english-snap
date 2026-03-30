@@ -68,6 +68,7 @@ function buildPrompt(existingPhrases) {
 {
   "phrase": "英語フレーズ（簡潔で覚えやすいもの）",
   "meaning": "日本語訳",
+  "blankWord": "フレーズの中で穴埋めクイズにする単語（1語）",
   "nuance": "ニュアンスの解説（使う場面、相手との関係性、カジュアル度など。100文字程度）",
   "examples": [
     {
@@ -93,6 +94,7 @@ function buildPrompt(existingPhrases) {
 - 中学生レベルから大人まで幅広く役立つ内容
 - クイズは学習を深める良問にする（難しすぎず、簡単すぎず）
 - 例文は必ずA/B形式の会話にし、Bの発言の前に改行コード（\\n）を入れてください
+- blankWordはフレーズ内のキーとなる単語を1つ選ぶ（例: "Sounds good" なら "good"、"I'm on it" なら "on"）
 - 必ず有効なJSONのみを出力し、説明文などは含めない`;
 
   // 既存フレーズがある場合、重複回避の指示を追加
@@ -129,7 +131,7 @@ async function generatePhrase(existingPhrases = []) {
 
     // データ検証
     if (!phraseData.phrase || !phraseData.meaning || !phraseData.nuance ||
-        !phraseData.examples || !phraseData.quiz) {
+        !phraseData.examples || !phraseData.quiz || !phraseData.blankWord) {
       throw new Error('Generated data is missing required fields');
     }
 
@@ -176,6 +178,7 @@ async function savePhrase(phraseData) {
       .insert({
         phrase: phraseData.phrase,
         meaning: phraseData.meaning,
+        blank_word: phraseData.blankWord,
         nuance: phraseData.nuance,
         examples: phraseData.examples,
         quiz: phraseData.quiz,

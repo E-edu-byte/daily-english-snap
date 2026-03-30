@@ -435,7 +435,11 @@ async function getLatestPhrase() {
       return getDailyPhrase()  // フォールバック：日付ベースで選択
     }
 
-    return data
+    // blank_word -> blankWord に変換（Supabase→フロントエンド）
+    return {
+      ...data,
+      blankWord: data.blank_word
+    }
   } catch {
     return getDailyPhrase()  // フォールバック：日付ベースで選択
   }
