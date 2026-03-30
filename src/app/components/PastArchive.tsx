@@ -48,7 +48,7 @@ function getProverbForDate(date: Date) {
   return proverbs[index]
 }
 
-// フレーズリスト（穴埋めクイズ用）
+// フレーズリスト（穴埋めクイズ用）- archive/[date]/page.tsxと同じ10個
 const phrases = [
   { phrase: "Sounds good.", blankWord: "good" },
   { phrase: "I'm on my way.", blankWord: "way" },
@@ -60,26 +60,6 @@ const phrases = [
   { phrase: "Could you say that again?", blankWord: "again" },
   { phrase: "It depends.", blankWord: "depends" },
   { phrase: "I'll figure it out.", blankWord: "figure" },
-  { phrase: "I'm looking forward to it.", blankWord: "forward" },
-  { phrase: "Let's keep in touch.", blankWord: "touch" },
-  { phrase: "I didn't catch that.", blankWord: "catch" },
-  { phrase: "You're telling me!", blankWord: "telling" },
-  { phrase: "I can't make it.", blankWord: "make" },
-  { phrase: "I'm running late.", blankWord: "running" },
-  { phrase: "What do you mean?", blankWord: "mean" },
-  { phrase: "That's a good point.", blankWord: "point" },
-  { phrase: "I'll take care of it.", blankWord: "care" },
-  { phrase: "I'm sorry to hear that.", blankWord: "sorry" },
-  { phrase: "Would you mind...?", blankWord: "mind" },
-  { phrase: "I'm working on it.", blankWord: "working" },
-  { phrase: "It's up to you.", blankWord: "up" },
-  { phrase: "I totally agree.", blankWord: "totally" },
-  { phrase: "Just in case.", blankWord: "case" },
-  { phrase: "I'm swamped.", blankWord: "swamped" },
-  { phrase: "Let's grab a coffee.", blankWord: "grab" },
-  { phrase: "I'm on the same page.", blankWord: "page" },
-  { phrase: "Fair enough.", blankWord: "enough" },
-  { phrase: "I've got to go.", blankWord: "got" },
 ]
 
 // 日付からフレーズを取得
