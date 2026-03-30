@@ -115,12 +115,13 @@ export default function PastArchive() {
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-3 mb-4">
           <Calendar className="w-7 h-7 text-emerald-500" />
-          <h2 className={`text-3xl font-bold text-emerald-600 font-serif ${lora.className}`}>
+          <h2 className={`text-2xl md:text-3xl font-bold text-emerald-600 font-serif ${lora.className}`}>
             過去の格言・クイズ
           </h2>
         </div>
-        <p className="text-stone-600">
-          日付をクリックして過去の学習内容を復習しましょう
+        <p className="text-stone-600 text-sm md:text-base">
+          <span className="hidden md:inline">日付をクリックして過去の学習内容を復習しましょう</span>
+          <span className="md:hidden">日付をタップして復習しよう！</span>
         </p>
       </div>
 
@@ -136,34 +137,40 @@ export default function PastArchive() {
               href={`/archive/${formatDateForUrl(date)}`}
               className="block border-b border-stone-100 last:border-b-0 hover:bg-amber-50 transition-colors"
             >
-              <div className="p-4 flex items-center gap-3">
+              <div className="p-3 md:p-4 flex items-center gap-2 md:gap-3">
                 {/* 日付 */}
-                <div className="flex-shrink-0 w-28">
-                  <p className="text-sm font-bold text-stone-700">
+                <div className="flex-shrink-0 w-24 md:w-28">
+                  <p className="text-xs md:text-sm font-bold text-stone-700">
                     {formatDate(date)}
                   </p>
                 </div>
 
-                {/* 格言 */}
-                <div className="flex-1 min-w-0">
+                {/* 格言（PC版のみ） */}
+                <div className="hidden md:block flex-1 min-w-0">
                   <p className="text-sm text-stone-600 truncate">
                     <span className="text-amber-600 font-medium">格言：</span>
                     <span className="text-stone-700">{proverb.english}</span>
                   </p>
                 </div>
 
+                {/* スマホ版のスペーサー */}
+                <div className="flex-1 md:hidden"></div>
+
                 {/* クイズ + Doneマーク */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-sm text-emerald-600 font-medium">クイズ：</span>
+                <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                  <span className="text-xs md:text-sm text-emerald-600 font-medium">
+                    <span className="hidden md:inline">クイズ：</span>
+                    <span className="md:hidden">学習</span>
+                  </span>
                   {isDone ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
                   ) : (
-                    <Circle className="w-5 h-5 text-stone-300" />
+                    <Circle className="w-4 h-4 md:w-5 md:h-5 text-stone-300" />
                   )}
                 </div>
 
                 {/* 矢印 */}
-                <div className="text-stone-400 flex-shrink-0">
+                <div className="text-stone-400 flex-shrink-0 text-sm">
                   →
                 </div>
               </div>
@@ -173,19 +180,20 @@ export default function PastArchive() {
       </div>
 
       {/* リンク */}
-      <div className="mt-4 flex justify-center items-center gap-6">
+      <div className="mt-4 flex justify-center items-center gap-3 md:gap-6">
         <Link
           href="/archive"
-          className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+          className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium transition-colors text-sm md:text-base"
         >
-          <span>過去30日分のアーカイブを見る</span>
+          <span className="hidden md:inline">過去30日分のアーカイブを見る</span>
+          <span className="md:hidden">過去30日分のアーカイブ</span>
         </Link>
         <Link
           href="/calendar"
-          className="flex items-center gap-2 bg-[#ffed4e] hover:bg-[#ffe033] px-4 py-2 rounded-full border-2 border-stone-900 hover:border-stone-900 transition-all shadow-sm"
+          className="flex items-center gap-1.5 md:gap-2 bg-[#ffed4e] hover:bg-[#ffe033] px-3 py-1.5 md:px-4 md:py-2 rounded-full border-2 border-stone-900 hover:border-stone-900 transition-all shadow-sm whitespace-nowrap"
         >
-          <Calendar className="w-5 h-5 text-stone-900" />
-          <span className="text-sm font-bold text-stone-900">学習記録</span>
+          <Calendar className="w-4 h-4 md:w-5 md:h-5 text-stone-900" />
+          <span className="text-xs md:text-sm font-bold text-stone-900">学習記録</span>
         </Link>
       </div>
     </section>
