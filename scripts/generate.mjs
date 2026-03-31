@@ -254,27 +254,89 @@ async function generateContent(existingPhrases = [], existingProverbs = []) {
 }
 
 /**
- * Supabaseにフレーズと格言を保存
+ * 今日の日付を取得（JST、YYYY-MM-DD形式）
+ */
+function getTodayDateJST() {
+  const now = new Date();
+  // JSTはUTC+9
+  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return jst.toISOString().split('T')[0];
+}
+
+/**
+ * 今日のデータが既に存在するかチェック
+ */
+async function getTodayEntry() {
+  const today = getTodayDateJST();
+  // JSTの今日0:00〜23:59をUTCに変換
+  const startOfDayJST = `${today}T00:00:00+09:00`;
+  const endOfDayJST = `${today}T23:59:59+09:00`;
+
+  const startUTC = new Date(startOfDayJST).toISOString();
+  const endUTC = new Date(endOfDayJST).toISOString();
+
+  const { data, error } = await supabase
+    .from('phrases')
+    .select('id')
+    .gte('generated_at', startUTC)
+    .lte('generated_at', endUTC)
+    .limit(1)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+    console.warn('⚠️  Error checking today entry:', error.message);
+  }
+
+  return data;
+}
+
+/**
+ * Supabaseにフレーズと格言を保存（1日1データ：同日なら上書き）
  */
 async function saveContent(data) {
   console.log('💾 Saving phrase and proverb to Supabase...');
 
   try {
-    const { data: savedData, error } = await supabase
-      .from('phrases')
-      .insert({
-        phrase: data.phrase,
-        meaning: data.meaning,
-        blank_word: data.blankWord,
-        nuance: data.nuance,
-        examples: data.examples,
-        quiz: data.quiz,
-        proverb_english: data.proverb.english,
-        proverb_japanese: data.proverb.japanese,
-        generated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+    // 今日のデータが既にあるかチェック
+    const existingEntry = await getTodayEntry();
+
+    const contentData = {
+      phrase: data.phrase,
+      meaning: data.meaning,
+      blank_word: data.blankWord,
+      nuance: data.nuance,
+      examples: data.examples,
+      quiz: data.quiz,
+      proverb_english: data.proverb.english,
+      proverb_japanese: data.proverb.japanese,
+      generated_at: new Date().toISOString()
+    };
+
+    let savedData;
+    let error;
+
+    if (existingEntry) {
+      // 既存データがあれば更新
+      console.log(`📝 Updating existing entry (ID: ${existingEntry.id})...`);
+      const result = await supabase
+        .from('phrases')
+        .update(contentData)
+        .eq('id', existingEntry.id)
+        .select()
+        .single();
+      savedData = result.data;
+      error = result.error;
+    } else {
+      // なければ新規作成
+      console.log('📝 Creating new entry...');
+      const result = await supabase
+        .from('phrases')
+        .insert(contentData)
+        .select()
+        .single();
+      savedData = result.data;
+      error = result.error;
+    }
 
     if (error) {
       throw error;
