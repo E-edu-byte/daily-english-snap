@@ -61,6 +61,40 @@ async function getExistingPhrases() {
  * 既存の格言を取得（重複チェック用）
  */
 async function getExistingProverbs() {
+  // 以前の固定リストにあった格言（これらも避ける）
+  const legacyProverbs = [
+    "Actions speak louder than words.",
+    "The early bird catches the worm.",
+    "Practice makes perfect.",
+    "Where there's a will, there's a way.",
+    "Time is money.",
+    "Knowledge is power.",
+    "Better late than never.",
+    "Two heads are better than one.",
+    "When in Rome, do as the Romans do.",
+    "A picture is worth a thousand words.",
+    "Rome wasn't built in a day.",
+    "Every cloud has a silver lining.",
+    "Don't count your chickens before they hatch.",
+    "The pen is mightier than the sword.",
+    "You can't judge a book by its cover.",
+    "All that glitters is not gold.",
+    "Honesty is the best policy.",
+    "A rolling stone gathers no moss.",
+    "Birds of a feather flock together.",
+    "Don't put all your eggs in one basket.",
+    "The grass is always greener on the other side.",
+    "Strike while the iron is hot.",
+    "No pain, no gain.",
+    "Absence makes the heart grow fonder.",
+    "A friend in need is a friend indeed.",
+    "An apple a day keeps the doctor away.",
+    "Beggars can't be choosers.",
+    "Blood is thicker than water.",
+    "Curiosity killed the cat.",
+    "Every dog has its day.",
+  ];
+
   try {
     const { data, error } = await supabase
       .from('phrases')
@@ -71,13 +105,15 @@ async function getExistingProverbs() {
 
     if (error) {
       console.warn('⚠️  Could not fetch existing proverbs:', error.message);
-      return [];
+      return legacyProverbs; // エラー時も固定リストは避ける
     }
 
-    return data.map(item => item.proverb_english).filter(Boolean);
+    const dbProverbs = data.map(item => item.proverb_english).filter(Boolean);
+    // 固定リスト + DB の格言を結合（重複排除）
+    return [...new Set([...legacyProverbs, ...dbProverbs])];
   } catch (error) {
     console.warn('⚠️  Error fetching existing proverbs:', error.message);
-    return [];
+    return legacyProverbs;
   }
 }
 
