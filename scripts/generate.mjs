@@ -82,10 +82,12 @@ async function getExistingProverbs() {
 }
 
 /**
- * フレーズ生成用プロンプト（既存フレーズを含む）
+ * フレーズ＋格言を同時生成するプロンプト（1回のAPI呼び出しで両方生成）
  */
-function buildPhrasePrompt(existingPhrases) {
-  let prompt = `あなたは英語学習コンテンツの専門家です。日常生活で即座にレスポンスできる、実用的で役立つ英語フレーズを1つ厳選してください。
+function buildCombinedPrompt(existingPhrases, existingProverbs) {
+  let prompt = `あなたは英語学習コンテンツの専門家です。以下の2つを生成してください：
+1. 日常生活で使える実用的な英語フレーズ
+2. 英語の格言・ことわざ
 
 以下のJSON形式で出力してください（JSON以外のテキストは含めないでください）：
 
@@ -109,16 +111,27 @@ function buildPhrasePrompt(existingPhrases) {
     "options": ["選択肢1", "選択肢2", "選択肢3"],
     "correct": 0,
     "explanation": "正解の解説（なぜその答えが正しいのか）"
+  },
+  "proverb": {
+    "english": "英語の格言・ことわざ",
+    "japanese": "日本語訳（意訳OK、日本のことわざに置き換えてもOK）"
   }
 }
 
 重要な条件：
+【フレーズについて】
 - フレーズは日常会話で実際によく使われるものを選ぶ
 - ビジネス、カジュアル、友人同士など、様々なシーンを網羅する
 - 中学生レベルから大人まで幅広く役立つ内容
 - クイズは学習を深める良問にする（難しすぎず、簡単すぎず）
 - 例文は必ずA/B形式の会話にし、Bの発言の前に改行コード（\\n）を入れてください
 - blankWordはフレーズ内のキーとなる単語を1つ選ぶ（例: "Sounds good" なら "good"、"I'm on it" なら "on"）
+
+【格言について】
+- 有名で教養として知っておきたい格言を選ぶ
+- 人生の知恵、努力、友情、時間など様々なテーマを網羅する
+- 英語学習者にとって学びがある表現を含む
+
 - 必ず有効なJSONのみを出力し、説明文などは含めない`;
 
   // 既存フレーズがある場合、重複回避の指示を追加
@@ -126,28 +139,6 @@ function buildPhrasePrompt(existingPhrases) {
     prompt += `\n\n【重要】以下のフレーズは既に使用済みなので、これらとは異なる新しいフレーズを選んでください：\n`;
     prompt += existingPhrases.map(p => `- ${p}`).join('\n');
   }
-
-  return prompt;
-}
-
-/**
- * 格言生成用プロンプト（既存格言を含む）
- */
-function buildProverbPrompt(existingProverbs) {
-  let prompt = `あなたは英語学習コンテンツの専門家です。英語の格言・ことわざを1つ選んでください。
-
-以下のJSON形式で出力してください（JSON以外のテキストは含めないでください）：
-
-{
-  "english": "英語の格言・ことわざ",
-  "japanese": "日本語訳（意訳OK、日本のことわざに置き換えてもOK）"
-}
-
-重要な条件：
-- 有名で教養として知っておきたい格言を選ぶ
-- 人生の知恵、努力、友情、時間など様々なテーマを網羅する
-- 英語学習者にとって学びがある表現を含む
-- 必ず有効なJSONのみを出力し、説明文などは含めない`;
 
   // 既存格言がある場合、重複回避の指示を追加
   if (existingProverbs.length > 0) {
@@ -159,96 +150,69 @@ function buildProverbPrompt(existingProverbs) {
 }
 
 /**
- * Gemini APIでフレーズを生成
+ * Gemini APIでフレーズと格言を同時生成（1回のAPI呼び出し）
  */
-async function generatePhrase(existingPhrases = []) {
-  console.log('🤖 Generating phrase with Gemini API...');
+async function generateContent(existingPhrases = [], existingProverbs = []) {
+  console.log('🤖 Generating phrase & proverb with Gemini API (1 call)...');
 
   if (existingPhrases.length > 0) {
     console.log(`📚 Avoiding ${existingPhrases.length} existing phrases...`);
   }
-
-  try {
-    const prompt = buildPhrasePrompt(existingPhrases);
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
-
-    // JSONパース（マークダウンコードブロックを除去）
-    const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const phraseData = JSON.parse(jsonText);
-
-    // デバッグ: 生成されたデータを表示
-    console.log('📋 Generated data:', JSON.stringify(phraseData, null, 2));
-
-    // データ検証
-    if (!phraseData.phrase || !phraseData.meaning || !phraseData.nuance ||
-        !phraseData.examples || !phraseData.quiz || !phraseData.blankWord) {
-      throw new Error('Generated data is missing required fields');
-    }
-
-    if (!Array.isArray(phraseData.examples)) {
-      throw new Error(`Examples must be an array, got: ${typeof phraseData.examples}`);
-    }
-
-    if (phraseData.examples.length !== 2) {
-      console.warn(`⚠️  Expected 2 examples, got ${phraseData.examples.length}. Adjusting...`);
-      // 例文が2つでない場合、調整する
-      if (phraseData.examples.length > 2) {
-        phraseData.examples = phraseData.examples.slice(0, 2);
-      } else if (phraseData.examples.length === 1) {
-        phraseData.examples.push(phraseData.examples[0]); // 1つしかない場合は複製
-      } else {
-        throw new Error('No examples provided');
-      }
-    }
-
-    if (!phraseData.quiz.question || !Array.isArray(phraseData.quiz.options) ||
-        phraseData.quiz.options.length !== 3 || typeof phraseData.quiz.correct !== 'number') {
-      throw new Error('Quiz data is invalid');
-    }
-
-    console.log('✅ Phrase generated successfully');
-    console.log(`📝 Phrase: ${phraseData.phrase}`);
-
-    return phraseData;
-  } catch (error) {
-    console.error('❌ Error generating phrase:', error.message);
-    throw error;
-  }
-}
-
-/**
- * Gemini APIで格言を生成
- */
-async function generateProverb(existingProverbs = []) {
-  console.log('🤖 Generating proverb with Gemini API...');
-
   if (existingProverbs.length > 0) {
     console.log(`📚 Avoiding ${existingProverbs.length} existing proverbs...`);
   }
 
   try {
-    const prompt = buildProverbPrompt(existingProverbs);
+    const prompt = buildCombinedPrompt(existingPhrases, existingProverbs);
     const result = await model.generateContent(prompt);
     const response = result.response;
     const text = response.text();
 
     // JSONパース（マークダウンコードブロックを除去）
     const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const proverbData = JSON.parse(jsonText);
+    const data = JSON.parse(jsonText);
 
-    // データ検証
-    if (!proverbData.english || !proverbData.japanese) {
-      throw new Error('Generated proverb is missing required fields');
+    // デバッグ: 生成されたデータを表示
+    console.log('📋 Generated data:', JSON.stringify(data, null, 2));
+
+    // フレーズデータ検証
+    if (!data.phrase || !data.meaning || !data.nuance ||
+        !data.examples || !data.quiz || !data.blankWord) {
+      throw new Error('Generated data is missing required phrase fields');
     }
 
-    console.log('✅ Proverb generated successfully');
-    console.log(`📝 Proverb: ${proverbData.english}`);
+    if (!Array.isArray(data.examples)) {
+      throw new Error(`Examples must be an array, got: ${typeof data.examples}`);
+    }
 
-    return proverbData;
+    if (data.examples.length !== 2) {
+      console.warn(`⚠️  Expected 2 examples, got ${data.examples.length}. Adjusting...`);
+      if (data.examples.length > 2) {
+        data.examples = data.examples.slice(0, 2);
+      } else if (data.examples.length === 1) {
+        data.examples.push(data.examples[0]);
+      } else {
+        throw new Error('No examples provided');
+      }
+    }
+
+    if (!data.quiz.question || !Array.isArray(data.quiz.options) ||
+        data.quiz.options.length !== 3 || typeof data.quiz.correct !== 'number') {
+      throw new Error('Quiz data is invalid');
+    }
+
+    // 格言データ検証
+    if (!data.proverb || !data.proverb.english || !data.proverb.japanese) {
+      throw new Error('Generated data is missing required proverb fields');
+    }
+
+    console.log('✅ Content generated successfully');
+    console.log(`📝 Phrase: ${data.phrase}`);
+    console.log(`📝 Proverb: ${data.proverb.english}`);
+
+    return data;
   } catch (error) {
-    console.error('❌ Error generating proverb:', error.message);
+    console.error('❌ Error generating content:', error.message);
     throw error;
   }
 }
@@ -256,21 +220,21 @@ async function generateProverb(existingProverbs = []) {
 /**
  * Supabaseにフレーズと格言を保存
  */
-async function savePhrase(phraseData, proverbData) {
+async function saveContent(data) {
   console.log('💾 Saving phrase and proverb to Supabase...');
 
   try {
-    const { data, error } = await supabase
+    const { data: savedData, error } = await supabase
       .from('phrases')
       .insert({
-        phrase: phraseData.phrase,
-        meaning: phraseData.meaning,
-        blank_word: phraseData.blankWord,
-        nuance: phraseData.nuance,
-        examples: phraseData.examples,
-        quiz: phraseData.quiz,
-        proverb_english: proverbData.english,
-        proverb_japanese: proverbData.japanese,
+        phrase: data.phrase,
+        meaning: data.meaning,
+        blank_word: data.blankWord,
+        nuance: data.nuance,
+        examples: data.examples,
+        quiz: data.quiz,
+        proverb_english: data.proverb.english,
+        proverb_japanese: data.proverb.japanese,
         generated_at: new Date().toISOString()
       })
       .select()
@@ -281,11 +245,11 @@ async function savePhrase(phraseData, proverbData) {
     }
 
     console.log('✅ Phrase and proverb saved successfully');
-    console.log(`🆔 ID: ${data.id}`);
+    console.log(`🆔 ID: ${savedData.id}`);
 
-    return data;
+    return savedData;
   } catch (error) {
-    console.error('❌ Error saving phrase:', error.message);
+    console.error('❌ Error saving content:', error.message);
     throw error;
   }
 }
@@ -303,18 +267,13 @@ async function main() {
     const existingPhrases = await getExistingPhrases();
     const existingProverbs = await getExistingProverbs();
 
-    // フレーズ生成
-    const phraseData = await generatePhrase(existingPhrases);
-
-    console.log('---');
-
-    // 格言生成
-    const proverbData = await generateProverb(existingProverbs);
+    // フレーズと格言を同時生成（1回のAPI呼び出し）
+    const content = await generateContent(existingPhrases, existingProverbs);
 
     console.log('---');
 
     // Supabaseに保存
-    await savePhrase(phraseData, proverbData);
+    await saveContent(content);
 
     console.log('---');
     console.log('🎉 All tasks completed successfully!');
