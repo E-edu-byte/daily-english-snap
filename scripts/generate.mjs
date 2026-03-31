@@ -58,9 +58,33 @@ async function getExistingPhrases() {
 }
 
 /**
- * プロンプトを生成（既存フレーズを含む）
+ * 既存の格言を取得（重複チェック用）
  */
-function buildPrompt(existingPhrases) {
+async function getExistingProverbs() {
+  try {
+    const { data, error } = await supabase
+      .from('phrases')
+      .select('proverb_english')
+      .not('proverb_english', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(100); // 直近100件を取得
+
+    if (error) {
+      console.warn('⚠️  Could not fetch existing proverbs:', error.message);
+      return [];
+    }
+
+    return data.map(item => item.proverb_english).filter(Boolean);
+  } catch (error) {
+    console.warn('⚠️  Error fetching existing proverbs:', error.message);
+    return [];
+  }
+}
+
+/**
+ * フレーズ生成用プロンプト（既存フレーズを含む）
+ */
+function buildPhrasePrompt(existingPhrases) {
   let prompt = `あなたは英語学習コンテンツの専門家です。日常生活で即座にレスポンスできる、実用的で役立つ英語フレーズを1つ厳選してください。
 
 以下のJSON形式で出力してください（JSON以外のテキストは含めないでください）：
@@ -107,6 +131,34 @@ function buildPrompt(existingPhrases) {
 }
 
 /**
+ * 格言生成用プロンプト（既存格言を含む）
+ */
+function buildProverbPrompt(existingProverbs) {
+  let prompt = `あなたは英語学習コンテンツの専門家です。英語の格言・ことわざを1つ選んでください。
+
+以下のJSON形式で出力してください（JSON以外のテキストは含めないでください）：
+
+{
+  "english": "英語の格言・ことわざ",
+  "japanese": "日本語訳（意訳OK、日本のことわざに置き換えてもOK）"
+}
+
+重要な条件：
+- 有名で教養として知っておきたい格言を選ぶ
+- 人生の知恵、努力、友情、時間など様々なテーマを網羅する
+- 英語学習者にとって学びがある表現を含む
+- 必ず有効なJSONのみを出力し、説明文などは含めない`;
+
+  // 既存格言がある場合、重複回避の指示を追加
+  if (existingProverbs.length > 0) {
+    prompt += `\n\n【重要】以下の格言は既に使用済みなので、これらとは異なる新しい格言を選んでください：\n`;
+    prompt += existingProverbs.map(p => `- ${p}`).join('\n');
+  }
+
+  return prompt;
+}
+
+/**
  * Gemini APIでフレーズを生成
  */
 async function generatePhrase(existingPhrases = []) {
@@ -117,7 +169,7 @@ async function generatePhrase(existingPhrases = []) {
   }
 
   try {
-    const prompt = buildPrompt(existingPhrases);
+    const prompt = buildPhrasePrompt(existingPhrases);
     const result = await model.generateContent(prompt);
     const response = result.response;
     const text = response.text();
@@ -167,10 +219,45 @@ async function generatePhrase(existingPhrases = []) {
 }
 
 /**
- * Supabaseにフレーズを保存
+ * Gemini APIで格言を生成
  */
-async function savePhrase(phraseData) {
-  console.log('💾 Saving phrase to Supabase...');
+async function generateProverb(existingProverbs = []) {
+  console.log('🤖 Generating proverb with Gemini API...');
+
+  if (existingProverbs.length > 0) {
+    console.log(`📚 Avoiding ${existingProverbs.length} existing proverbs...`);
+  }
+
+  try {
+    const prompt = buildProverbPrompt(existingProverbs);
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text();
+
+    // JSONパース（マークダウンコードブロックを除去）
+    const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const proverbData = JSON.parse(jsonText);
+
+    // データ検証
+    if (!proverbData.english || !proverbData.japanese) {
+      throw new Error('Generated proverb is missing required fields');
+    }
+
+    console.log('✅ Proverb generated successfully');
+    console.log(`📝 Proverb: ${proverbData.english}`);
+
+    return proverbData;
+  } catch (error) {
+    console.error('❌ Error generating proverb:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Supabaseにフレーズと格言を保存
+ */
+async function savePhrase(phraseData, proverbData) {
+  console.log('💾 Saving phrase and proverb to Supabase...');
 
   try {
     const { data, error } = await supabase
@@ -182,6 +269,8 @@ async function savePhrase(phraseData) {
         nuance: phraseData.nuance,
         examples: phraseData.examples,
         quiz: phraseData.quiz,
+        proverb_english: proverbData.english,
+        proverb_japanese: proverbData.japanese,
         generated_at: new Date().toISOString()
       })
       .select()
@@ -191,7 +280,7 @@ async function savePhrase(phraseData) {
       throw error;
     }
 
-    console.log('✅ Phrase saved successfully');
+    console.log('✅ Phrase and proverb saved successfully');
     console.log(`🆔 ID: ${data.id}`);
 
     return data;
@@ -205,19 +294,27 @@ async function savePhrase(phraseData) {
  * メイン処理
  */
 async function main() {
-  console.log('🚀 Daily English Snap - Phrase Generation Started');
+  console.log('🚀 Daily English Snap - Phrase & Proverb Generation Started');
   console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
   console.log('---');
 
   try {
-    // 既存フレーズを取得（重複回避用）
+    // 既存フレーズと格言を取得（重複回避用）
     const existingPhrases = await getExistingPhrases();
+    const existingProverbs = await getExistingProverbs();
 
     // フレーズ生成
     const phraseData = await generatePhrase(existingPhrases);
 
+    console.log('---');
+
+    // 格言生成
+    const proverbData = await generateProverb(existingProverbs);
+
+    console.log('---');
+
     // Supabaseに保存
-    await savePhrase(phraseData);
+    await savePhrase(phraseData, proverbData);
 
     console.log('---');
     console.log('🎉 All tasks completed successfully!');

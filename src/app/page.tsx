@@ -419,7 +419,7 @@ function getDailyPhrase() {
 async function getLatestPhrase() {
   // Supabaseが設定されていない場合はモックデータを使用
   if (!supabase) {
-    return getDailyPhrase()
+    return { phrase: getDailyPhrase(), proverb: null }
   }
 
   try {
@@ -432,16 +432,23 @@ async function getLatestPhrase() {
 
     if (error) {
       console.error('Error fetching latest phrase:', error)
-      return getDailyPhrase()  // フォールバック：日付ベースで選択
+      return { phrase: getDailyPhrase(), proverb: null }  // フォールバック：日付ベースで選択
     }
 
     // blank_word -> blankWord に変換（Supabase→フロントエンド）
-    return {
+    const phrase = {
       ...data,
       blankWord: data.blank_word
     }
+
+    // 格言データを抽出
+    const proverb = data.proverb_english && data.proverb_japanese
+      ? { english: data.proverb_english, japanese: data.proverb_japanese }
+      : null
+
+    return { phrase, proverb }
   } catch {
-    return getDailyPhrase()  // フォールバック：日付ベースで選択
+    return { phrase: getDailyPhrase(), proverb: null }  // フォールバック：日付ベースで選択
   }
 }
 
@@ -500,7 +507,7 @@ async function getPastPhrases() {
 }
 
 export default async function Home() {
-  const latestPhrase = await getLatestPhrase()
+  const { phrase: latestPhrase, proverb } = await getLatestPhrase()
   const pastPhrases = await getPastPhrases()
 
   return (
@@ -508,7 +515,7 @@ export default async function Home() {
       {/* ヒーローセクション */}
       <section className="text-center mb-2 animate-fade-in-up">
         {/* 今日のことわざ */}
-        <DailyProverb />
+        <DailyProverb proverb={proverb || undefined} />
 
         <h2 className={`text-4xl font-bold text-emerald-600 font-serif mb-6 ${lora.className}`}>
           Today&apos;s Quiz

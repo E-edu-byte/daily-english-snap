@@ -2,8 +2,8 @@ name: Generate Daily English Phrase
 
 on:
   schedule:
-    # 日本時間 8:00 (UTC 23:00 前日) - 1日1回更新
-    - cron: '0 23 * * *'
+    # 日本時間 0:00 (UTC 15:00 前日) - 日付が変わったら更新
+    - cron: '0 15 * * *'
   workflow_dispatch: # 手動実行も可能
 
 jobs:
