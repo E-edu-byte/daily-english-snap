@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
 import { Inter, Lora, Quicksand } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 import Link from 'next/link'
 import { Calendar } from 'lucide-react'
+
+// Google Analytics 測定ID
+const GA_MEASUREMENT_ID = 'G-X86N4CXC8B'
 
 const inter = Inter({ subsets: ['latin'] })
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
@@ -42,12 +46,27 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
+        {/* Google Analytics */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
+
         {/* Google AdSense */}
-        <script
+        <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5844879039024261"
           crossOrigin="anonymous"
-        ></script>
+          strategy="afterInteractive"
+        />
       </head>
       <body className={inter.className}>
         <div className="min-h-screen flex flex-col bg-[#fafaf9]">
