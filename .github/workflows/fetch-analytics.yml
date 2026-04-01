@@ -1,0 +1,34 @@
+name: Fetch Analytics Data
+
+on:
+  schedule:
+    # 毎日 9:00, 15:00, 21:00 JST に実行
+    - cron: '0 0,6,12 * * *'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Fetch analytics data
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python scripts/fetch-analytics.py
+
+      - name: Log completion
+        run: |
+          echo "✅ Analytics fetch completed at $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S JST')"
