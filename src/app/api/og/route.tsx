@@ -52,7 +52,7 @@ function createBlankPhrase(phrase: string, blankWord: string): string {
 export async function GET(request: NextRequest) {
   // URLパラメータから日付を取得（キャッシュバスティング用）
   const { searchParams } = new URL(request.url)
-  const date = searchParams.get('d') // 日付パラメータ（使用しないが、URLを変えるため）
+  const date = searchParams.get('d')
 
   const phraseData = await getLatestPhrase()
   const blankPhrase = createBlankPhrase(phraseData.phrase, phraseData.blankWord || '')
@@ -71,7 +71,6 @@ export async function GET(request: NextRequest) {
           fontFamily: 'sans-serif',
         }}
       >
-        {/* ヘッダー */}
         <div
           style={{
             display: 'flex',
@@ -92,7 +91,6 @@ export async function GET(request: NextRequest) {
           </span>
         </div>
 
-        {/* Today's Quiz ラベル */}
         <div
           style={{
             display: 'flex',
@@ -107,10 +105,9 @@ export async function GET(request: NextRequest) {
             marginBottom: '40px',
           }}
         >
-          Today&apos;s Quiz
+          {"Today's Quiz"}
         </div>
 
-        {/* メインカード */}
         <div
           style={{
             display: 'flex',
@@ -123,43 +120,19 @@ export async function GET(request: NextRequest) {
             border: '4px solid #eab308',
           }}
         >
-          {/* 穴埋めフレーズ */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              fontSize: '64px',
+              fontSize: '56px',
               fontWeight: 'bold',
               color: '#292524',
               marginBottom: '24px',
             }}
           >
-            {blankPhrase.split('???').map((part, i, arr) => (
-              <span key={i} style={{ display: 'flex', alignItems: 'center' }}>
-                {part}
-                {i < arr.length - 1 && (
-                  <span
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#10b981',
-                      color: 'white',
-                      padding: '8px 24px',
-                      borderRadius: '12px',
-                      margin: '0 8px',
-                      fontSize: '48px',
-                      border: '3px dashed white',
-                    }}
-                  >
-                    ???
-                  </span>
-                )}
-              </span>
-            ))}
+            {blankPhrase}
           </div>
 
-          {/* 意味 */}
           <div
             style={{
               fontSize: '32px',
@@ -170,32 +143,16 @@ export async function GET(request: NextRequest) {
           </div>
         </div>
 
-        {/* 日付表示 */}
-        {date && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginTop: '24px',
-              fontSize: '20px',
-              color: '#a8a29e',
-            }}
-          >
-            {date}
-          </div>
-        )}
-
-        {/* フッター */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            marginTop: '16px',
+            marginTop: '32px',
             fontSize: '24px',
             color: '#78716c',
           }}
         >
-          english.news-navi.jp
+          english.news-navi.jp {date ? `| ${date}` : ''}
         </div>
       </div>
     ),

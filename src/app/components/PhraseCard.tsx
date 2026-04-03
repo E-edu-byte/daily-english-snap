@@ -25,10 +25,18 @@ interface PhraseCardProps {
   date?: string  // YYYY-MM-DD形式。アーカイブページ用
 }
 
+// 今日のJST日付を取得
+function getTodayJST(): string {
+  const now = new Date()
+  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+  return jst.toISOString().split('T')[0]
+}
+
 export default function PhraseCard({ phrase, date }: PhraseCardProps) {
   const [isPlaying, setIsPlaying] = useState<string | null>(null)
   const [speakingPerson, setSpeakingPerson] = useState<'A' | 'B' | null>(null)
   const [showBlankAnswer, setShowBlankAnswer] = useState(false)
+  const todayJST = getTodayJST()
 
   // フレーズを空欄付きで表示
   const renderPhraseWithBlank = () => {
@@ -231,7 +239,7 @@ export default function PhraseCard({ phrase, date }: PhraseCardProps) {
             <div className="flex items-center gap-2">
               <DoneButton phraseId={phrase.id} date={date} />
               <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`1日１回英語フレーズを学ぼう\n格言もあるよ！\n\n`)}&url=${encodeURIComponent(`https://english.news-navi.jp?d=${phrase.generated_at.split('T')[0]}`)}&hashtags=DailyEnglishSnap,英語学習`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`1日１回英語フレーズを学ぼう\n格言もあるよ！\n\n`)}&url=${encodeURIComponent(`https://english.news-navi.jp?d=${todayJST}`)}&hashtags=DailyEnglishSnap,英語学習`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-1.5 px-4 py-2 bg-black hover:bg-gray-800 text-white font-medium rounded-lg transition-colors"
