@@ -225,10 +225,24 @@ export default function PhraseCard({ phrase, date }: PhraseCardProps) {
             )}
           </div>
 
-          {/* 右側：学習記録 */}
+          {/* 右側：学習記録・シェア */}
           <div className="flex flex-col justify-center lg:min-w-[280px] lg:border-l-2 lg:border-stone-900/10 lg:pl-6">
             <p className="text-sm text-stone-600 mb-2">Update：{formatDate(phrase.generated_at)}</p>
-            <DoneButton phraseId={phrase.id} date={date} />
+            <div className="flex items-center gap-2">
+              <DoneButton phraseId={phrase.id} date={date} />
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`今日の英語フレーズ\n\n"${phrase.phrase}"\n${phrase.meaning}\n\n`)}&url=${encodeURIComponent('https://english.news-navi.jp')}&hashtags=DailyEnglishSnap,英語学習`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-black hover:bg-gray-800 text-white font-medium rounded-lg transition-colors"
+                title="Xでシェア"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                <span className="hidden sm:inline">シェア</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
