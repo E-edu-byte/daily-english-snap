@@ -231,7 +231,7 @@ export default function PhraseCard({ phrase, date }: PhraseCardProps) {
             <div className="flex items-center gap-2">
               <DoneButton phraseId={phrase.id} date={date} />
               <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`今日の英語フレーズ\n\n"${phrase.phrase}"\n${phrase.meaning}\n\n`)}&url=${encodeURIComponent('https://english.news-navi.jp')}&hashtags=DailyEnglishSnap,英語学習`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`今日の英語フレーズ\n\n"${phrase.phrase}"\n${phrase.meaning}\n\n`)}&url=${encodeURIComponent(`https://english.news-navi.jp?d=${phrase.generated_at.split('T')[0]}`)}&hashtags=DailyEnglishSnap,英語学習`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-1.5 px-4 py-2 bg-black hover:bg-gray-800 text-white font-medium rounded-lg transition-colors"

@@ -1,14 +1,8 @@
 import { ImageResponse } from 'next/og'
+import { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'edge'
-export const revalidate = 3600 // 1時間ごとに再生成
-export const alt = "Today's Quiz - Daily English Snap"
-export const size = {
-  width: 1200,
-  height: 630,
-}
-export const contentType = 'image/png'
 
 // モックフレーズ（Supabase接続できない場合のフォールバック）
 const mockPhrase = {
@@ -55,7 +49,11 @@ function createBlankPhrase(phrase: string, blankWord: string): string {
   return phrase.replace(blankWord, blank)
 }
 
-export default async function Image() {
+export async function GET(request: NextRequest) {
+  // URLパラメータから日付を取得（キャッシュバスティング用）
+  const { searchParams } = new URL(request.url)
+  const date = searchParams.get('d') // 日付パラメータ（使用しないが、URLを変えるため）
+
   const phraseData = await getLatestPhrase()
   const blankPhrase = createBlankPhrase(phraseData.phrase, phraseData.blankWord || '')
 
@@ -172,12 +170,27 @@ export default async function Image() {
           </div>
         </div>
 
+        {/* 日付表示 */}
+        {date && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginTop: '24px',
+              fontSize: '20px',
+              color: '#a8a29e',
+            }}
+          >
+            {date}
+          </div>
+        )}
+
         {/* フッター */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            marginTop: '40px',
+            marginTop: '16px',
             fontSize: '24px',
             color: '#78716c',
           }}
@@ -187,7 +200,8 @@ export default async function Image() {
       </div>
     ),
     {
-      ...size,
+      width: 1200,
+      height: 630,
     }
   )
 }

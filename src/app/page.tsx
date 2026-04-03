@@ -4,8 +4,32 @@ import PhraseCard from './components/PhraseCard'
 import DailyProverb from './components/DailyProverb'
 import PastArchive from './components/PastArchive'
 import { Lora } from 'next/font/google'
+import type { Metadata } from 'next'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
+
+// 動的メタデータ生成（OGP画像のURL毎日更新）
+export async function generateMetadata(): Promise<Metadata> {
+  // 今日の日付（JST）をキャッシュバスティング用に使用
+  const now = new Date()
+  const jstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+  const dateStr = jstDate.toISOString().split('T')[0]
+
+  return {
+    openGraph: {
+      images: [{
+        url: `https://english.news-navi.jp/api/og?d=${dateStr}`,
+        width: 1200,
+        height: 630,
+        alt: "Today's Quiz - Daily English Snap",
+      }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: [`https://english.news-navi.jp/api/og?d=${dateStr}`],
+    },
+  }
+}
 
 // Supabase クライアント（サーバーサイド）
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
