@@ -25,11 +25,19 @@ async function getPhrase(id: string) {
     return null
   }
 
-  return data
+  return {
+    ...data,
+    blankWord: data.blank_word
+  }
 }
 
-export async function generateMetadata({ params }: { params: { id: string } }) {
-  const phrase = await getPhrase(params.id)
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: PageProps) {
+  const { id } = await params
+  const phrase = await getPhrase(id)
 
   if (!phrase) {
     return {
@@ -43,8 +51,9 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   }
 }
 
-export default async function PhrasePage({ params }: { params: { id: string } }) {
-  const phrase = await getPhrase(params.id)
+export default async function PhrasePage({ params }: PageProps) {
+  const { id } = await params
+  const phrase = await getPhrase(id)
 
   if (!phrase) {
     notFound()

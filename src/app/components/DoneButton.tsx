@@ -2,13 +2,48 @@
 
 import { useState, useEffect } from 'react'
 import { CheckCircle2, Circle } from 'lucide-react'
+import { Level, DEFAULT_LEVEL, LEVELS } from '../types'
 
 interface DoneButtonProps {
   phraseId: string
   date?: string  // YYYY-MM-DD形式。指定しない場合は今日の日付
+  level?: Level  // レベル。指定しない場合はhigh_school
 }
 
-export default function DoneButton({ phraseId, date }: DoneButtonProps) {
+// 旧形式から新形式への変換
+type OldRecordFormat = string[]
+type NewRecordFormat = Record<Level, string[]>
+type RecordValue = OldRecordFormat | NewRecordFormat
+
+function isNewFormat(value: RecordValue): value is NewRecordFormat {
+  return typeof value === 'object' && !Array.isArray(value)
+}
+
+function normalizeRecord(value: RecordValue): NewRecordFormat {
+  if (isNewFormat(value)) {
+    return {
+      high_school: value.high_school || [],
+      business: value.business || [],
+      advanced: value.advanced || []
+    }
+  }
+  // 旧形式：high_schoolにマイグレーション
+  return {
+    high_school: value,
+    business: [],
+    advanced: []
+  }
+}
+
+function createEmptyRecord(): NewRecordFormat {
+  return {
+    high_school: [],
+    business: [],
+    advanced: []
+  }
+}
+
+export default function DoneButton({ phraseId, date, level = DEFAULT_LEVEL }: DoneButtonProps) {
   const [isDone, setIsDone] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
 
@@ -23,35 +58,55 @@ export default function DoneButton({ phraseId, date }: DoneButtonProps) {
 
     const targetDate = getTargetDate()
     const records = JSON.parse(localStorage.getItem('learningRecords') || '{}')
-    const dateRecords = records[targetDate] || []
-    setIsDone(dateRecords.includes(phraseId))
-  }, [phraseId, date])
+    const dateRecord = records[targetDate]
+
+    if (dateRecord) {
+      const normalized = normalizeRecord(dateRecord)
+      const levelRecords = normalized[level] || []
+      setIsDone(levelRecords.includes(phraseId))
+    } else {
+      setIsDone(false)
+    }
+  }, [phraseId, date, level])
 
   const handleClick = () => {
     if (typeof window === 'undefined') return
 
     const targetDate = getTargetDate()
     const records = JSON.parse(localStorage.getItem('learningRecords') || '{}')
-    const dateRecords = records[targetDate] || []
+
+    // 既存のレコードを新形式に変換
+    const dateRecord = records[targetDate]
+      ? normalizeRecord(records[targetDate])
+      : createEmptyRecord()
+
+    const levelRecords = [...(dateRecord[level] || [])]
 
     if (isDone) {
       // 学習記録を削除
-      const newDateRecords = dateRecords.filter((id: string) => id !== phraseId)
-      if (newDateRecords.length === 0) {
-        delete records[targetDate]
-      } else {
-        records[targetDate] = newDateRecords
+      const index = levelRecords.indexOf(phraseId)
+      if (index > -1) {
+        levelRecords.splice(index, 1)
       }
       setIsDone(false)
     } else {
       // 学習記録を追加
-      if (!dateRecords.includes(phraseId)) {
-        dateRecords.push(phraseId)
+      if (!levelRecords.includes(phraseId)) {
+        levelRecords.push(phraseId)
       }
-      records[targetDate] = dateRecords
       setIsDone(true)
       setIsAnimating(true)
       setTimeout(() => setIsAnimating(false), 600)
+    }
+
+    dateRecord[level] = levelRecords
+
+    // 空の日付レコードを削除
+    const hasAnyRecords = LEVELS.some(l => dateRecord[l].length > 0)
+    if (hasAnyRecords) {
+      records[targetDate] = dateRecord
+    } else {
+      delete records[targetDate]
     }
 
     localStorage.setItem('learningRecords', JSON.stringify(records))
@@ -83,7 +138,7 @@ export default function DoneButton({ phraseId, date }: DoneButtonProps) {
         )}
       </button>
       <span className="text-sm text-stone-700 font-medium">
-        Doneをタップして📅カレンダーをスタンプでいっぱいにしよう！
+        Doneをタップして学習を記録しよう！
       </span>
     </div>
   )

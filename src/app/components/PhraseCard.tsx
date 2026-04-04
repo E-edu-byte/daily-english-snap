@@ -4,6 +4,7 @@ import { MessageSquare, BookText, Volume2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import DoneButton from './DoneButton'
 import Link from 'next/link'
+import { Level, DEFAULT_LEVEL } from '../types'
 
 interface Example {
   english: string
@@ -23,6 +24,7 @@ interface Phrase {
 interface PhraseCardProps {
   phrase: Phrase
   date?: string  // YYYY-MM-DD形式。アーカイブページ用
+  level?: Level  // レベル。DoneButtonに渡す
 }
 
 // 今日のJST日付を取得
@@ -32,7 +34,7 @@ function getTodayJST(): string {
   return jst.toISOString().split('T')[0]
 }
 
-export default function PhraseCard({ phrase, date }: PhraseCardProps) {
+export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: PhraseCardProps) {
   const [isPlaying, setIsPlaying] = useState<string | null>(null)
   const [speakingPerson, setSpeakingPerson] = useState<'A' | 'B' | null>(null)
   const [showBlankAnswer, setShowBlankAnswer] = useState(false)
@@ -237,7 +239,7 @@ export default function PhraseCard({ phrase, date }: PhraseCardProps) {
           <div className="flex flex-col justify-center lg:min-w-[280px] lg:border-l-2 lg:border-stone-900/10 lg:pl-6">
             <p className="text-sm text-stone-600 mb-2">Update：{formatDate(phrase.generated_at)}</p>
             <div className="flex items-center gap-2">
-              <DoneButton phraseId={phrase.id} date={date} />
+              <DoneButton phraseId={phrase.id} date={date} level={level} />
               <a
                 href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`1日１回英語フレーズを学ぼう\n格言もあるよ！\n\n`)}&url=${encodeURIComponent(`https://english.news-navi.jp?d=${todayJST}`)}&hashtags=DailyEnglishSnap,英語学習`}
                 target="_blank"

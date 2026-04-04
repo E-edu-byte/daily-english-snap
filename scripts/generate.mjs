@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 
 /**
- * Daily English Snap - フレーズ生成スクリプト
+ * Daily English Snap - フレーズ生成スクリプト（3レベル対応版）
  *
- * Gemini APIで英語フレーズを生成し、Supabaseに保存します。
+ * Gemini APIで3つのレベル（高校英語・ビジネス英語・上級）の英語フレーズを生成し、
+ * Supabaseに保存します。API呼び出しは1回のみ。
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
+
+// レベル定義
+const LEVELS = ['high_school', 'business', 'advanced'];
 
 // 環境変数の検証
 const requiredEnvVars = [
@@ -43,7 +47,7 @@ async function getExistingPhrases() {
       .from('phrases')
       .select('phrase')
       .order('created_at', { ascending: false })
-      .limit(100); // 直近100件を取得
+      .limit(300); // 直近300件を取得（3レベル×100日分）
 
     if (error) {
       console.warn('⚠️  Could not fetch existing phrases:', error.message);
@@ -118,35 +122,60 @@ async function getExistingProverbs() {
 }
 
 /**
- * フレーズ＋格言を同時生成するプロンプト（1回のAPI呼び出しで両方生成）
+ * 3レベル同時生成するプロンプト（1回のAPI呼び出しで3フレーズ + 1格言生成）
  */
 function buildCombinedPrompt(existingPhrases, existingProverbs) {
-  let prompt = `あなたは英語学習コンテンツの専門家です。以下の2つを生成してください：
-1. 日常生活で使える実用的な英語フレーズ
-2. 英語の格言・ことわざ
+  let prompt = `あなたは英語学習コンテンツの専門家です。以下を生成してください：
+
+1. 3つのレベル別英語フレーズ：
+   - high_school（高校英語レベル）: 英検準2-2級 / TOEIC 500-600相当
+   - business（ビジネスレベル）: 英検準1級 / TOEIC 600-800相当
+   - advanced（上級レベル）: 英検1級 / TOEIC 800+相当
+
+2. 英語の格言・ことわざ（全レベル共通）
 
 以下のJSON形式で出力してください（JSON以外のテキストは含めないでください）：
 
 {
-  "phrase": "英語フレーズ（簡潔で覚えやすいもの）",
-  "meaning": "日本語訳",
-  "blankWord": "フレーズの中で穴埋めクイズにする単語（1語）",
-  "nuance": "ニュアンスの解説（使う場面、相手との関係性、カジュアル度など。100文字程度）",
-  "examples": [
-    {
-      "english": "A: 例文1のA発言\\nB: フレーズを使った返答",
-      "japanese": "A: 日本語訳A\\nB: 日本語訳B"
+  "phrases": {
+    "high_school": {
+      "phrase": "英語フレーズ（高校生でも理解できる基本的な表現）",
+      "meaning": "日本語訳",
+      "blankWord": "フレーズの中で穴埋めクイズにする単語（1語）",
+      "nuance": "ニュアンスの解説（使う場面、相手との関係性、カジュアル度など。100文字程度）",
+      "examples": [
+        {
+          "english": "A: 例文1のA発言\\nB: フレーズを使った返答",
+          "japanese": "A: 日本語訳A\\nB: 日本語訳B"
+        },
+        {
+          "english": "A: 例文2のA発言\\nB: フレーズを使った返答",
+          "japanese": "A: 日本語訳A\\nB: 日本語訳B"
+        }
+      ],
+      "quiz": {
+        "question": "フレーズに関連した3択クイズの問題文",
+        "options": ["選択肢1", "選択肢2", "選択肢3"],
+        "correct": 0,
+        "explanation": "正解の解説（なぜその答えが正しいのか）"
+      }
     },
-    {
-      "english": "A: 例文2のA発言\\nB: フレーズを使った返答",
-      "japanese": "A: 日本語訳A\\nB: 日本語訳B"
+    "business": {
+      "phrase": "英語フレーズ（ビジネスシーンで使われる実用的な表現）",
+      "meaning": "日本語訳",
+      "blankWord": "フレーズの中で穴埋めクイズにする単語（1語）",
+      "nuance": "ニュアンスの解説（ビジネスでの使い方、フォーマル度など。100文字程度）",
+      "examples": [...],
+      "quiz": {...}
+    },
+    "advanced": {
+      "phrase": "英語フレーズ（上級者向けのイディオムや洗練された表現）",
+      "meaning": "日本語訳",
+      "blankWord": "フレーズの中で穴埋めクイズにする単語（1語）",
+      "nuance": "ニュアンスの解説（ネイティブが使う高度な表現など。100文字程度）",
+      "examples": [...],
+      "quiz": {...}
     }
-  ],
-  "quiz": {
-    "question": "フレーズに関連した3択クイズの問題文",
-    "options": ["選択肢1", "選択肢2", "選択肢3"],
-    "correct": 0,
-    "explanation": "正解の解説（なぜその答えが正しいのか）"
   },
   "proverb": {
     "english": "英語の格言・ことわざ",
@@ -155,13 +184,17 @@ function buildCombinedPrompt(existingPhrases, existingProverbs) {
 }
 
 重要な条件：
-【フレーズについて】
+【レベル別フレーズについて】
+- high_school: 基本的な日常表現、教科書に出てくるような実用フレーズ
+- business: 会議、メール、交渉などビジネスシーンで役立つ表現
+- advanced: イディオム、スラング、ネイティブが好む洗練された表現
+
+【共通の条件】
 - フレーズは日常会話で実際によく使われるものを選ぶ
-- ビジネス、カジュアル、友人同士など、様々なシーンを網羅する
-- 中学生レベルから大人まで幅広く役立つ内容
+- 3つのレベルで異なるフレーズを選ぶ（同じフレーズは使わない）
 - クイズは学習を深める良問にする（難しすぎず、簡単すぎず）
 - 例文は必ずA/B形式の会話にし、Bの発言の前に改行コード（\\n）を入れてください
-- blankWordはフレーズ内のキーとなる単語を1つ選ぶ（例: "Sounds good" なら "good"、"I'm on it" なら "on"）
+- blankWordはフレーズ内のキーとなる単語を1つ選ぶ
 
 【格言について】
 - 有名で教養として知っておきたい格言を選ぶ
@@ -173,7 +206,7 @@ function buildCombinedPrompt(existingPhrases, existingProverbs) {
   // 既存フレーズがある場合、重複回避の指示を追加
   if (existingPhrases.length > 0) {
     prompt += `\n\n【重要】以下のフレーズは既に使用済みなので、これらとは異なる新しいフレーズを選んでください：\n`;
-    prompt += existingPhrases.map(p => `- ${p}`).join('\n');
+    prompt += existingPhrases.slice(0, 100).map(p => `- ${p}`).join('\n'); // 最新100件のみ
   }
 
   // 既存格言がある場合、重複回避の指示を追加
@@ -186,10 +219,10 @@ function buildCombinedPrompt(existingPhrases, existingProverbs) {
 }
 
 /**
- * Gemini APIでフレーズと格言を同時生成（1回のAPI呼び出し）
+ * Gemini APIで3レベルのフレーズと格言を同時生成（1回のAPI呼び出し）
  */
 async function generateContent(existingPhrases = [], existingProverbs = []) {
-  console.log('🤖 Generating phrase & proverb with Gemini API (1 call)...');
+  console.log('🤖 Generating 3-level phrases & proverb with Gemini API (1 call)...');
 
   if (existingPhrases.length > 0) {
     console.log(`📚 Avoiding ${existingPhrases.length} existing phrases...`);
@@ -211,30 +244,36 @@ async function generateContent(existingPhrases = [], existingProverbs = []) {
     // デバッグ: 生成されたデータを表示
     console.log('📋 Generated data:', JSON.stringify(data, null, 2));
 
-    // フレーズデータ検証
-    if (!data.phrase || !data.meaning || !data.nuance ||
-        !data.examples || !data.quiz || !data.blankWord) {
-      throw new Error('Generated data is missing required phrase fields');
-    }
-
-    if (!Array.isArray(data.examples)) {
-      throw new Error(`Examples must be an array, got: ${typeof data.examples}`);
-    }
-
-    if (data.examples.length !== 2) {
-      console.warn(`⚠️  Expected 2 examples, got ${data.examples.length}. Adjusting...`);
-      if (data.examples.length > 2) {
-        data.examples = data.examples.slice(0, 2);
-      } else if (data.examples.length === 1) {
-        data.examples.push(data.examples[0]);
-      } else {
-        throw new Error('No examples provided');
+    // 3レベルのフレーズデータ検証
+    for (const level of LEVELS) {
+      const phraseData = data.phrases?.[level];
+      if (!phraseData) {
+        throw new Error(`Missing phrase data for level: ${level}`);
       }
-    }
+      if (!phraseData.phrase || !phraseData.meaning || !phraseData.nuance ||
+          !phraseData.examples || !phraseData.quiz || !phraseData.blankWord) {
+        throw new Error(`Generated data is missing required phrase fields for level: ${level}`);
+      }
 
-    if (!data.quiz.question || !Array.isArray(data.quiz.options) ||
-        data.quiz.options.length !== 3 || typeof data.quiz.correct !== 'number') {
-      throw new Error('Quiz data is invalid');
+      if (!Array.isArray(phraseData.examples)) {
+        throw new Error(`Examples must be an array for level: ${level}, got: ${typeof phraseData.examples}`);
+      }
+
+      if (phraseData.examples.length !== 2) {
+        console.warn(`⚠️  Expected 2 examples for ${level}, got ${phraseData.examples.length}. Adjusting...`);
+        if (phraseData.examples.length > 2) {
+          phraseData.examples = phraseData.examples.slice(0, 2);
+        } else if (phraseData.examples.length === 1) {
+          phraseData.examples.push(phraseData.examples[0]);
+        } else {
+          throw new Error(`No examples provided for level: ${level}`);
+        }
+      }
+
+      if (!phraseData.quiz.question || !Array.isArray(phraseData.quiz.options) ||
+          phraseData.quiz.options.length !== 3 || typeof phraseData.quiz.correct !== 'number') {
+        throw new Error(`Quiz data is invalid for level: ${level}`);
+      }
     }
 
     // 格言データ検証
@@ -243,7 +282,9 @@ async function generateContent(existingPhrases = [], existingProverbs = []) {
     }
 
     console.log('✅ Content generated successfully');
-    console.log(`📝 Phrase: ${data.phrase}`);
+    for (const level of LEVELS) {
+      console.log(`📝 [${level}] ${data.phrases[level].phrase}`);
+    }
     console.log(`📝 Proverb: ${data.proverb.english}`);
 
     return data;
@@ -264,9 +305,9 @@ function getTodayDateJST() {
 }
 
 /**
- * 今日のデータが既に存在するかチェック
+ * 今日のデータが既に存在するかチェック（レベル別）
  */
-async function getTodayEntry() {
+async function getTodayEntries() {
   const today = getTodayDateJST();
   // JSTの今日0:00〜23:59をUTCに変換
   const startOfDayJST = `${today}T00:00:00+09:00`;
@@ -277,75 +318,86 @@ async function getTodayEntry() {
 
   const { data, error } = await supabase
     .from('phrases')
-    .select('id')
+    .select('id, level')
     .gte('generated_at', startUTC)
-    .lte('generated_at', endUTC)
-    .limit(1)
-    .single();
+    .lte('generated_at', endUTC);
 
   if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-    console.warn('⚠️  Error checking today entry:', error.message);
+    console.warn('⚠️  Error checking today entries:', error.message);
   }
 
-  return data;
+  // レベルごとにマッピング
+  const entries = {};
+  if (data) {
+    for (const item of data) {
+      entries[item.level || 'high_school'] = item.id;
+    }
+  }
+
+  return entries;
 }
 
 /**
- * Supabaseにフレーズと格言を保存（1日1データ：同日なら上書き）
+ * Supabaseに3レベルのフレーズと格言を保存（1日3データ：同日なら上書き）
  */
 async function saveContent(data) {
-  console.log('💾 Saving phrase and proverb to Supabase...');
+  console.log('💾 Saving 3-level phrases and proverb to Supabase...');
 
   try {
     // 今日のデータが既にあるかチェック
-    const existingEntry = await getTodayEntry();
+    const existingEntries = await getTodayEntries();
+    const generatedAt = new Date().toISOString();
 
-    const contentData = {
-      phrase: data.phrase,
-      meaning: data.meaning,
-      blank_word: data.blankWord,
-      nuance: data.nuance,
-      examples: data.examples,
-      quiz: data.quiz,
-      proverb_english: data.proverb.english,
-      proverb_japanese: data.proverb.japanese,
-      generated_at: new Date().toISOString()
-    };
+    for (const level of LEVELS) {
+      const phraseData = data.phrases[level];
 
-    let savedData;
-    let error;
+      const contentData = {
+        phrase: phraseData.phrase,
+        meaning: phraseData.meaning,
+        blank_word: phraseData.blankWord,
+        nuance: phraseData.nuance,
+        examples: phraseData.examples,
+        quiz: phraseData.quiz,
+        proverb_english: data.proverb.english,
+        proverb_japanese: data.proverb.japanese,
+        level: level,
+        generated_at: generatedAt
+      };
 
-    if (existingEntry) {
-      // 既存データがあれば更新
-      console.log(`📝 Updating existing entry (ID: ${existingEntry.id})...`);
-      const result = await supabase
-        .from('phrases')
-        .update(contentData)
-        .eq('id', existingEntry.id)
-        .select()
-        .single();
-      savedData = result.data;
-      error = result.error;
-    } else {
-      // なければ新規作成
-      console.log('📝 Creating new entry...');
-      const result = await supabase
-        .from('phrases')
-        .insert(contentData)
-        .select()
-        .single();
-      savedData = result.data;
-      error = result.error;
+      let savedData;
+      let error;
+
+      if (existingEntries[level]) {
+        // 既存データがあれば更新
+        console.log(`📝 Updating existing entry for [${level}] (ID: ${existingEntries[level]})...`);
+        const result = await supabase
+          .from('phrases')
+          .update(contentData)
+          .eq('id', existingEntries[level])
+          .select()
+          .single();
+        savedData = result.data;
+        error = result.error;
+      } else {
+        // なければ新規作成
+        console.log(`📝 Creating new entry for [${level}]...`);
+        const result = await supabase
+          .from('phrases')
+          .insert(contentData)
+          .select()
+          .single();
+        savedData = result.data;
+        error = result.error;
+      }
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`✅ [${level}] saved successfully - ID: ${savedData.id}`);
     }
 
-    if (error) {
-      throw error;
-    }
-
-    console.log('✅ Phrase and proverb saved successfully');
-    console.log(`🆔 ID: ${savedData.id}`);
-
-    return savedData;
+    console.log('✅ All phrases and proverb saved successfully');
   } catch (error) {
     console.error('❌ Error saving content:', error.message);
     throw error;
@@ -356,7 +408,7 @@ async function saveContent(data) {
  * メイン処理
  */
 async function main() {
-  console.log('🚀 Daily English Snap - Phrase & Proverb Generation Started');
+  console.log('🚀 Daily English Snap - 3-Level Phrase & Proverb Generation Started');
   console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
   console.log('---');
 
@@ -365,7 +417,7 @@ async function main() {
     const existingPhrases = await getExistingPhrases();
     const existingProverbs = await getExistingProverbs();
 
-    // フレーズと格言を同時生成（1回のAPI呼び出し）
+    // 3レベルのフレーズと格言を同時生成（1回のAPI呼び出し）
     const content = await generateContent(existingPhrases, existingProverbs);
 
     console.log('---');

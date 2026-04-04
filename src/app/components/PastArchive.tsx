@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Calendar, CheckCircle2, Circle } from 'lucide-react'
 import { Lora } from 'next/font/google'
+import { Level, DEFAULT_LEVEL, LEVELS } from '../types'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
 
@@ -87,11 +88,36 @@ function getPastDates(days: number) {
   return dates
 }
 
-interface PastArchiveProps {
-  pastPhrases?: Record<string, { phrase: string; blankWord: string }>
+// 旧形式から新形式への変換
+type OldRecordFormat = string[]
+type NewRecordFormat = Record<Level, string[]>
+type RecordValue = OldRecordFormat | NewRecordFormat
+
+function isNewFormat(value: RecordValue): value is NewRecordFormat {
+  return typeof value === 'object' && !Array.isArray(value)
 }
 
-export default function PastArchive({ pastPhrases = {} }: PastArchiveProps) {
+function normalizeRecord(value: RecordValue): NewRecordFormat {
+  if (isNewFormat(value)) {
+    return {
+      high_school: value.high_school || [],
+      business: value.business || [],
+      advanced: value.advanced || []
+    }
+  }
+  return {
+    high_school: value,
+    business: [],
+    advanced: []
+  }
+}
+
+interface PastArchiveProps {
+  pastPhrases?: Record<string, { phrase: string; blankWord: string }>
+  selectedLevel?: Level
+}
+
+export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_LEVEL }: PastArchiveProps) {
   const pastDates = getPastDates(7)  // 1週間分
   const [doneStates, setDoneStates] = useState<Record<string, boolean>>({})
 
@@ -101,8 +127,13 @@ export default function PastArchive({ pastPhrases = {} }: PastArchiveProps) {
     const states: Record<string, boolean> = {}
     pastDates.forEach(date => {
       const dateKey = formatDateForStorage(date)
-      // その日付に記録があればDoneとみなす
-      states[dateKey] = records[dateKey] && records[dateKey].length > 0
+      const dateRecord = records[dateKey]
+      if (dateRecord) {
+        const normalized = normalizeRecord(dateRecord)
+        states[dateKey] = (normalized[selectedLevel] || []).length > 0
+      } else {
+        states[dateKey] = false
+      }
     })
     setDoneStates(states)
   }
@@ -121,7 +152,7 @@ export default function PastArchive({ pastPhrases = {} }: PastArchiveProps) {
       window.removeEventListener('learningRecordsUpdated', handleUpdate)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [selectedLevel])
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('ja-JP', {
@@ -151,6 +182,29 @@ export default function PastArchive({ pastPhrases = {} }: PastArchiveProps) {
     return getFallbackPhraseForDate(date)
   }
 
+  // リンクにレベルパラメータを追加
+  const getArchiveLink = (date: Date) => {
+    const dateStr = formatDateForUrl(date)
+    if (selectedLevel === DEFAULT_LEVEL) {
+      return `/archive/${dateStr}`
+    }
+    return `/archive/${dateStr}?level=${selectedLevel}`
+  }
+
+  const getCalendarLink = () => {
+    if (selectedLevel === DEFAULT_LEVEL) {
+      return '/calendar'
+    }
+    return `/calendar?level=${selectedLevel}`
+  }
+
+  const getArchiveIndexLink = () => {
+    if (selectedLevel === DEFAULT_LEVEL) {
+      return '/archive'
+    }
+    return `/archive?level=${selectedLevel}`
+  }
+
   return (
     <section className="mt-16 animate-fade-in-up">
       <div className="text-center mb-8">
@@ -177,7 +231,7 @@ export default function PastArchive({ pastPhrases = {} }: PastArchiveProps) {
           return (
             <Link
               key={index}
-              href={`/archive/${formatDateForUrl(date)}`}
+              href={getArchiveLink(date)}
               className="block border-b border-stone-100 last:border-b-0 hover:bg-amber-50 transition-colors"
             >
               <div className="p-3 md:p-4 flex items-center gap-2 md:gap-3">
@@ -227,14 +281,14 @@ export default function PastArchive({ pastPhrases = {} }: PastArchiveProps) {
       {/* リンク */}
       <div className="mt-4 flex justify-center items-center gap-3 md:gap-6">
         <Link
-          href="/archive"
+          href={getArchiveIndexLink()}
           className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium transition-colors text-sm md:text-base"
         >
           <span className="hidden md:inline">過去30日分のアーカイブを見る</span>
           <span className="md:hidden">過去30日分のアーカイブ</span>
         </Link>
         <Link
-          href="/calendar"
+          href={getCalendarLink()}
           className="flex items-center gap-1.5 md:gap-2 bg-[#ffed4e] hover:bg-[#ffe033] px-3 py-1.5 md:px-4 md:py-2 rounded-full border-2 border-stone-900 hover:border-stone-900 transition-all shadow-sm whitespace-nowrap"
         >
           <Calendar className="w-4 h-4 md:w-5 md:h-5 text-stone-900" />

@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Calendar, CheckCircle2, Circle } from 'lucide-react'
 import { Lora } from 'next/font/google'
+import LevelTabs from '../components/LevelTabs'
+import { Level, DEFAULT_LEVEL, LEVELS, isValidLevel } from '../types'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
 
@@ -87,7 +90,35 @@ function getPastDates(days: number) {
   return dates
 }
 
-export default function ArchiveIndexPage() {
+// 旧形式から新形式への変換
+type OldRecordFormat = string[]
+type NewRecordFormat = Record<Level, string[]>
+type RecordValue = OldRecordFormat | NewRecordFormat
+
+function isNewFormat(value: RecordValue): value is NewRecordFormat {
+  return typeof value === 'object' && !Array.isArray(value)
+}
+
+function normalizeRecord(value: RecordValue): NewRecordFormat {
+  if (isNewFormat(value)) {
+    return {
+      high_school: value.high_school || [],
+      business: value.business || [],
+      advanced: value.advanced || []
+    }
+  }
+  return {
+    high_school: value,
+    business: [],
+    advanced: []
+  }
+}
+
+function ArchiveContent() {
+  const searchParams = useSearchParams()
+  const levelParam = searchParams.get('level')
+  const selectedLevel: Level = isValidLevel(levelParam) ? levelParam : DEFAULT_LEVEL
+
   const pastDates = getPastDates(30)  // 30日分表示
   const [doneStates, setDoneStates] = useState<Record<string, boolean>>({})
 
@@ -102,15 +133,26 @@ export default function ArchiveIndexPage() {
     return formatDateForUrl(date)
   }
 
-  useEffect(() => {
+  const loadDoneStates = () => {
     const records = JSON.parse(localStorage.getItem('learningRecords') || '{}')
     const states: Record<string, boolean> = {}
     pastDates.forEach(date => {
       const dateKey = formatDateForStorage(date)
-      states[dateKey] = records[dateKey] && records[dateKey].length > 0
+      const dateRecord = records[dateKey]
+      if (dateRecord) {
+        const normalized = normalizeRecord(dateRecord)
+        states[dateKey] = (normalized[selectedLevel] || []).length > 0
+      } else {
+        states[dateKey] = false
+      }
     })
     setDoneStates(states)
-  }, [])
+  }
+
+  useEffect(() => {
+    loadDoneStates()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLevel])
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('ja-JP', {
@@ -118,6 +160,25 @@ export default function ArchiveIndexPage() {
       day: 'numeric',
       weekday: 'short'
     })
+  }
+
+  const handleLevelChange = (newLevel: Level) => {
+    const url = new URL(window.location.href)
+    if (newLevel === DEFAULT_LEVEL) {
+      url.searchParams.delete('level')
+    } else {
+      url.searchParams.set('level', newLevel)
+    }
+    window.history.pushState({}, '', url.toString())
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
+  const getArchiveLink = (date: Date) => {
+    const dateStr = formatDateForUrl(date)
+    if (selectedLevel === DEFAULT_LEVEL) {
+      return `/archive/${dateStr}`
+    }
+    return `/archive/${dateStr}?level=${selectedLevel}`
   }
 
   return (
@@ -139,9 +200,15 @@ export default function ArchiveIndexPage() {
             過去の格言・クイズ
           </h1>
         </div>
-        <p className="text-stone-600">
+        <p className="text-stone-600 mb-4">
           過去30日分のアーカイブ
         </p>
+
+        {/* レベルタブ */}
+        <LevelTabs
+          selectedLevel={selectedLevel}
+          onLevelChange={handleLevelChange}
+        />
       </div>
 
       {/* アーカイブ一覧 */}
@@ -156,7 +223,7 @@ export default function ArchiveIndexPage() {
           return (
             <Link
               key={index}
-              href={`/archive/${formatDateForUrl(date)}`}
+              href={getArchiveLink(date)}
               className="block border-b border-stone-100 last:border-b-0 hover:bg-amber-50 transition-colors"
             >
               <div className="p-3 md:p-4 flex items-center gap-2 md:gap-3">
@@ -203,5 +270,13 @@ export default function ArchiveIndexPage() {
         })}
       </div>
     </div>
+  )
+}
+
+export default function ArchiveIndexPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
+      <ArchiveContent />
+    </Suspense>
   )
 }

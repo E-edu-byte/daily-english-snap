@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import LearningCalendar from '../components/LearningCalendar'
+import CalendarContent from './CalendarContent'
 
 export const metadata: Metadata = {
   title: '学習カレンダー - Daily English Snap',
@@ -36,7 +36,7 @@ export default function CalendarPage() {
 
       {/* カレンダー */}
       <section className="animate-fade-in-up animate-delay-100">
-        <LearningCalendar />
+        <CalendarContent />
       </section>
     </div>
   )

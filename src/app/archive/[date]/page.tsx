@@ -5,6 +5,8 @@ import PhraseCard from '../../components/PhraseCard'
 import DailyProverbArchive from '../../components/DailyProverbArchive'
 import PastArchive from '../../components/PastArchive'
 import { Lora } from 'next/font/google'
+import { Level, LEVELS, DEFAULT_LEVEL, isValidLevel } from '../../types'
+import ArchiveDateContent from './ArchiveDateContent'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
 
@@ -49,10 +51,10 @@ const proverbs = [
   { english: "Every dog has its day.", japanese: "誰にでも全盛期がある" },
 ]
 
-// モックフレーズ（Supabaseにデータがない場合のフォールバック）
-const mockPhrases = [
-  {
-    id: 'mock-1',
+// モックフレーズ（レベル別）
+const mockPhrasesBase = {
+  high_school: {
+    id: 'mock-hs-1',
     phrase: "Sounds good.",
     blankWord: "good",
     meaning: "いいね、分かった、それでいこう",
@@ -61,123 +63,40 @@ const mockPhrases = [
       { english: "A: How about we meet at 7 PM for dinner?\nB: Sounds good. I'll make a reservation.", japanese: "A: 夕食に7時でどう？\nB: いいね。予約しておくよ。" },
       { english: "A: Let's wrap up the meeting here.\nB: Sounds good to me.", japanese: "A: ここで会議を終わりにしましょう。\nB: いいですね。" }
     ],
-    generated_at: ""
+    generated_at: "",
+    level: 'high_school'
   },
-  {
-    id: 'mock-2',
-    phrase: "I'm on my way.",
-    blankWord: "way",
-    meaning: "今向かってるところ",
-    nuance: "待ち合わせに遅れそうな時や、どこにいるか聞かれた時に使います。「もうすぐ着く」というニュアンスを含み、相手を安心させる効果があります。",
+  business: {
+    id: 'mock-biz-1',
+    phrase: "I'll circle back on this.",
+    blankWord: "circle",
+    meaning: "この件について後で改めて連絡します",
+    nuance: "ビジネスミーティングで、今すぐ答えられない案件について後で検討・対応することを伝える表現。プロフェッショナルな印象を与えます。",
     examples: [
-      { english: "A: Where are you? The movie starts in 10 minutes!\nB: I'm on my way. Be there soon!", japanese: "A: どこにいるの？映画10分で始まるよ！\nB: 今向かってる。すぐ着くよ！" },
-      { english: "A: Are you coming to the party?\nB: Yes, I'm on my way now.", japanese: "A: パーティー来る？\nB: うん、今向かってるところ。" }
+      { english: "A: What's the status of the budget approval?\nB: I'll circle back on this after I speak with finance.", japanese: "A: 予算承認の状況はどうですか？\nB: 財務と話した後、改めてご連絡します。" },
+      { english: "A: Can you give us an update on the project?\nB: Let me circle back on this by end of day.", japanese: "A: プロジェクトの進捗を教えてもらえますか？\nB: 本日中に改めてご報告します。" }
     ],
-    generated_at: ""
+    generated_at: "",
+    level: 'business'
   },
-  {
-    id: 'mock-3',
-    phrase: "Let me check.",
-    blankWord: "check",
-    meaning: "確認させて、ちょっと調べるね",
-    nuance: "すぐに答えられない質問を受けた時や、情報を確認する必要がある時に使います。ビジネスでも日常でも非常によく使われる便利なフレーズです。",
+  advanced: {
+    id: 'mock-adv-1',
+    phrase: "It's a double-edged sword.",
+    blankWord: "sword",
+    meaning: "諸刃の剣だね、良い面と悪い面がある",
+    nuance: "何かが利点と欠点の両方を持つことを表現するイディオム。上級者向けの洗練された比喩表現で、ディスカッションや分析的な会話でよく使われます。",
     examples: [
-      { english: "A: Is the meeting room available at 3?\nB: Let me check... Yes, it's free.", japanese: "A: 3時に会議室空いてる？\nB: 確認するね...うん、空いてるよ。" },
-      { english: "A: Do you have this in size M?\nB: Let me check the back.", japanese: "A: これのMサイズありますか？\nB: 奥を確認してきますね。" }
+      { english: "A: Social media has made communication so much easier.\nB: True, but it's a double-edged sword. Privacy concerns are real.", japanese: "A: SNSでコミュニケーションがとても簡単になったよね。\nB: 確かに、でも諸刃の剣だね。プライバシーの問題は深刻だよ。" },
+      { english: "A: Working from home sounds perfect.\nB: It's a double-edged sword, honestly. The flexibility is great, but isolation can be tough.", japanese: "A: 在宅勤務って最高に聞こえる。\nB: 正直、諸刃の剣だよ。柔軟性はいいけど、孤立感がつらいこともある。" }
     ],
-    generated_at: ""
-  },
-  {
-    id: 'mock-4',
-    phrase: "No worries.",
-    blankWord: "worries",
-    meaning: "大丈夫だよ、気にしないで",
-    nuance: "相手が謝ってきた時や、感謝された時に「問題ないよ」と返す表現。「You're welcome」よりカジュアルで、現代の会話でとても人気があります。",
-    examples: [
-      { english: "A: Sorry I'm late!\nB: No worries. We just started.", japanese: "A: 遅れてごめん！\nB: 大丈夫だよ。今始まったところ。" },
-      { english: "A: Thanks for helping me move.\nB: No worries! Happy to help.", japanese: "A: 引っ越し手伝ってくれてありがとう。\nB: 気にしないで！喜んで。" }
-    ],
-    generated_at: ""
-  },
-  {
-    id: 'mock-5',
-    phrase: "I'll get back to you.",
-    blankWord: "back",
-    meaning: "後で連絡するね、また返事します",
-    nuance: "今すぐ答えられない時や、確認後に連絡すると伝える時に使います。ビジネスメールでも口頭でも頻繁に使われるプロフェッショナルな表現です。",
-    examples: [
-      { english: "A: Can you give me a quote by tomorrow?\nB: I'll get back to you by end of day.", japanese: "A: 明日までに見積もりもらえる？\nB: 今日中に連絡しますね。" },
-      { english: "A: What do you think about the proposal?\nB: Let me review it. I'll get back to you.", japanese: "A: この提案どう思う？\nB: 確認させて。また連絡するね。" }
-    ],
-    generated_at: ""
-  },
-  {
-    id: 'mock-6',
-    phrase: "That makes sense.",
-    blankWord: "sense",
-    meaning: "なるほど、それは理にかなっている",
-    nuance: "相手の説明や理由を聞いて納得した時に使います。「I understand」より積極的に同意・納得を示すニュアンスがあります。",
-    examples: [
-      { english: "A: We should launch in spring because that's when sales peak.\nB: That makes sense.", japanese: "A: 春に発売すべきだよ、売上がピークになる時期だから。\nB: なるほど、それは理にかなってるね。" },
-      { english: "A: I took the train because parking is expensive downtown.\nB: Yeah, that makes sense.", japanese: "A: 駐車場代が高いから電車で来たんだ。\nB: うん、それがいいね。" }
-    ],
-    generated_at: ""
-  },
-  {
-    id: 'mock-7',
-    phrase: "I'm not sure.",
-    blankWord: "sure",
-    meaning: "よくわからない、確信がない",
-    nuance: "はっきり答えられない時や、自信がない時に使います。「I don't know」より柔らかく、謙虚な印象を与えます。",
-    examples: [
-      { english: "A: Is the store open on Sundays?\nB: I'm not sure. Let me Google it.", japanese: "A: その店、日曜日開いてる？\nB: わからないな。ググってみるね。" },
-      { english: "A: Do you think he'll come?\nB: I'm not sure. He hasn't replied yet.", japanese: "A: 彼来ると思う？\nB: わからない。まだ返事ないし。" }
-    ],
-    generated_at: ""
-  },
-  {
-    id: 'mock-8',
-    phrase: "Could you say that again?",
-    blankWord: "again",
-    meaning: "もう一度言ってもらえますか？",
-    nuance: "聞き取れなかった時や、もう一度確認したい時に使う丁寧な表現。「What?」や「Huh?」よりずっと礼儀正しいです。",
-    examples: [
-      { english: "A: The meeting is at 2:30 in room B12.\nB: Sorry, could you say that again? Which room?", japanese: "A: 会議は2:30にB12室でね。\nB: ごめん、もう一度言って？どの部屋？" },
-      { english: "A: My email is john.smith@company.com.\nB: Could you say that again slowly?", japanese: "A: メールアドレスはjohn.smith@company.comです。\nB: ゆっくりもう一度言ってもらえますか？" }
-    ],
-    generated_at: ""
-  },
-  {
-    id: 'mock-9',
-    phrase: "It depends.",
-    blankWord: "depends",
-    meaning: "場合による、状況次第",
-    nuance: "一概に答えられない時や、条件によって答えが変わる時に使います。この後に「on〜」をつけて具体的に説明することが多いです。",
-    examples: [
-      { english: "A: Is Tokyo expensive?\nB: It depends. Eating out can be cheap or very expensive.", japanese: "A: 東京って高い？\nB: 場合によるね。外食は安くも高くもなるよ。" },
-      { english: "A: How long does it take to learn English?\nB: It depends on how much you practice.", japanese: "A: 英語習得にどれくらいかかる？\nB: どれだけ練習するかによるね。" }
-    ],
-    generated_at: ""
-  },
-  {
-    id: 'mock-10',
-    phrase: "I'll figure it out.",
-    blankWord: "figure",
-    meaning: "なんとかするよ、自分で解決する",
-    nuance: "問題に直面した時に「心配しないで、対処するよ」と伝える表現。自立した印象を与え、ポジティブなニュアンスがあります。",
-    examples: [
-      { english: "A: The instructions are all in Japanese!\nB: Don't worry, I'll figure it out.", japanese: "A: 説明書が全部日本語だ！\nB: 心配しないで、なんとかするよ。" },
-      { english: "A: How will you get to the airport?\nB: I'll figure it out. Maybe take a taxi.", japanese: "A: 空港までどうやって行くの？\nB: なんとかするよ。タクシーかな。" }
-    ],
-    generated_at: ""
-  },
-]
+    generated_at: "",
+    level: 'advanced'
+  }
+}
 
 // 日付からモックフレーズを取得（フォールバック用）
-function getMockPhraseForDate(date: Date) {
-  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000)
-  const index = (dayOfYear + 1) % mockPhrases.length
-  const phrase = { ...mockPhrases[index] }
+function getMockPhraseForDate(date: Date, level: Level) {
+  const phrase = { ...mockPhrasesBase[level] }
   phrase.generated_at = date.toISOString()
   return phrase
 }
@@ -189,11 +108,23 @@ function getProverbForDate(date: Date) {
   return proverbs[index]
 }
 
-// Supabaseからその日のフレーズを取得
-async function getPhraseForDate(dateStr: string) {
+// Supabaseからその日のフレーズを取得（レベル別）
+async function getPhrasesForDate(dateStr: string): Promise<{
+  phrases: Record<Level, typeof mockPhrasesBase.high_school | null>
+  proverb: { english: string; japanese: string } | null
+}> {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+
   if (!supabase) {
-    const [year, month, day] = dateStr.split('-').map(Number)
-    return getMockPhraseForDate(new Date(year, month - 1, day))
+    return {
+      phrases: {
+        high_school: getMockPhraseForDate(date, 'high_school'),
+        business: getMockPhraseForDate(date, 'business'),
+        advanced: getMockPhraseForDate(date, 'advanced')
+      },
+      proverb: getProverbForDate(date)
+    }
   }
 
   try {
@@ -207,32 +138,79 @@ async function getPhraseForDate(dateStr: string) {
       .gte('generated_at', startOfDay)
       .lte('generated_at', endOfDay)
       .order('generated_at', { ascending: false })
-      .limit(1)
-      .single()
 
-    if (error || !data) {
-      // Supabaseにデータがない場合はモックを使用
-      const [year, month, day] = dateStr.split('-').map(Number)
-      return getMockPhraseForDate(new Date(year, month - 1, day))
+    if (error || !data || data.length === 0) {
+      return {
+        phrases: {
+          high_school: getMockPhraseForDate(date, 'high_school'),
+          business: getMockPhraseForDate(date, 'business'),
+          advanced: getMockPhraseForDate(date, 'advanced')
+        },
+        proverb: getProverbForDate(date)
+      }
     }
 
-    // blank_word -> blankWord に変換
-    return {
-      ...data,
-      blankWord: data.blank_word
+    // レベル別にフレーズを整理
+    const phrases: Record<Level, typeof mockPhrasesBase.high_school | null> = {
+      high_school: null,
+      business: null,
+      advanced: null
     }
+
+    let proverb: { english: string; japanese: string } | null = null
+
+    for (const item of data) {
+      const level = (item.level || 'high_school') as Level
+      if (!phrases[level]) {
+        phrases[level] = {
+          ...item,
+          blankWord: item.blank_word
+        }
+      }
+
+      if (!proverb && item.proverb_english && item.proverb_japanese) {
+        proverb = {
+          english: item.proverb_english,
+          japanese: item.proverb_japanese
+        }
+      }
+    }
+
+    // 足りないレベルはモックで補完
+    for (const level of LEVELS) {
+      if (!phrases[level]) {
+        phrases[level] = getMockPhraseForDate(date, level)
+      }
+    }
+
+    // 格言がない場合はフォールバック
+    if (!proverb) {
+      proverb = getProverbForDate(date)
+    }
+
+    return { phrases, proverb }
   } catch {
-    const [year, month, day] = dateStr.split('-').map(Number)
-    return getMockPhraseForDate(new Date(year, month - 1, day))
+    return {
+      phrases: {
+        high_school: getMockPhraseForDate(date, 'high_school'),
+        business: getMockPhraseForDate(date, 'business'),
+        advanced: getMockPhraseForDate(date, 'advanced')
+      },
+      proverb: getProverbForDate(date)
+    }
   }
 }
 
-// 過去7日分のフレーズを取得
-async function getPastPhrases() {
-  const pastPhrases: Record<string, { phrase: string; blankWord: string }> = {}
+// 過去7日分のフレーズを取得（レベル別）
+async function getPastPhrases(): Promise<Record<Level, Record<string, { phrase: string; blankWord: string }>>> {
+  const result: Record<Level, Record<string, { phrase: string; blankWord: string }>> = {
+    high_school: {},
+    business: {},
+    advanced: {}
+  }
 
   if (!supabase) {
-    return pastPhrases
+    return result
   }
 
   try {
@@ -242,30 +220,31 @@ async function getPastPhrases() {
 
     const { data, error } = await supabase
       .from('phrases')
-      .select('phrase, blank_word, generated_at')
+      .select('phrase, blank_word, generated_at, level')
       .gte('generated_at', sevenDaysAgo.toISOString())
       .order('generated_at', { ascending: false })
 
     if (error || !data) {
-      return pastPhrases
+      return result
     }
 
     data.forEach(item => {
       const date = new Date(item.generated_at)
       const jstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000)
       const dateStr = jstDate.toISOString().split('T')[0]
+      const level = (item.level || 'high_school') as Level
 
-      if (!pastPhrases[dateStr]) {
-        pastPhrases[dateStr] = {
+      if (!result[level][dateStr]) {
+        result[level][dateStr] = {
           phrase: item.phrase,
           blankWord: item.blank_word || ''
         }
       }
     })
 
-    return pastPhrases
+    return result
   } catch {
-    return pastPhrases
+    return result
   }
 }
 
@@ -280,8 +259,7 @@ export default async function ArchivePage({ params }: PageProps) {
   const [year, month, day] = dateStr.split('-').map(Number)
   const date = new Date(year, month - 1, day)
 
-  const phrase = await getPhraseForDate(dateStr)
-  const proverb = getProverbForDate(date)
+  const { phrases, proverb } = await getPhrasesForDate(dateStr)
   const pastPhrases = await getPastPhrases()
 
   const formatDate = (d: Date) => {
@@ -294,35 +272,12 @@ export default async function ArchivePage({ params }: PageProps) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* 戻るボタン */}
-      <Link
-        href="/"
-        className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span className="font-medium">トップに戻る</span>
-      </Link>
-
-      {/* 日付ヘッダー */}
-      <div className="text-center mb-8">
-        <p className="text-stone-500 text-sm mb-2">アーカイブ</p>
-        <h1 className={`text-2xl md:text-3xl font-bold text-stone-800 ${lora.className}`}>
-          {formatDate(date)}
-        </h1>
-      </div>
-
-      {/* ことわざ */}
-      <DailyProverbArchive proverb={proverb} />
-
-      {/* フレーズ */}
-      <h2 className={`text-2xl md:text-4xl font-bold text-emerald-600 font-serif mb-6 text-center ${lora.className}`}>
-        Today&apos;s Quiz
-      </h2>
-      <PhraseCard phrase={phrase} date={dateStr} />
-
-      {/* 過去の格言・クイズ */}
-      <PastArchive pastPhrases={pastPhrases} />
-    </div>
+    <ArchiveDateContent
+      dateStr={dateStr}
+      formattedDate={formatDate(date)}
+      phrases={phrases}
+      proverb={proverb}
+      pastPhrases={pastPhrases}
+    />
   )
 }

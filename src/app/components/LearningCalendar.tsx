@@ -3,16 +3,52 @@
 import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
 import Link from 'next/link'
+import LevelTabs from './LevelTabs'
+import { Level, DEFAULT_LEVEL, LEVELS } from '../types'
 
-export default function LearningCalendar() {
+// 旧形式から新形式への変換
+type OldRecordFormat = string[]
+type NewRecordFormat = Record<Level, string[]>
+type RecordValue = OldRecordFormat | NewRecordFormat
+
+function isNewFormat(value: RecordValue): value is NewRecordFormat {
+  return typeof value === 'object' && !Array.isArray(value)
+}
+
+function normalizeRecord(value: RecordValue): NewRecordFormat {
+  if (isNewFormat(value)) {
+    return {
+      high_school: value.high_school || [],
+      business: value.business || [],
+      advanced: value.advanced || []
+    }
+  }
+  return {
+    high_school: value,
+    business: [],
+    advanced: []
+  }
+}
+
+interface LearningCalendarProps {
+  initialLevel?: Level
+}
+
+export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: LearningCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [learningRecords, setLearningRecords] = useState<Record<string, string[]>>({})
+  const [learningRecords, setLearningRecords] = useState<Record<string, NewRecordFormat>>({})
+  const [selectedLevel, setSelectedLevel] = useState<Level>(initialLevel)
 
   // LocalStorageから学習記録を読み込み
   const loadRecords = () => {
     if (typeof window === 'undefined') return
-    const records = JSON.parse(localStorage.getItem('learningRecords') || '{}')
-    setLearningRecords(records)
+    const rawRecords = JSON.parse(localStorage.getItem('learningRecords') || '{}')
+    // 全レコードを新形式に変換
+    const normalizedRecords: Record<string, NewRecordFormat> = {}
+    for (const [date, value] of Object.entries(rawRecords)) {
+      normalizedRecords[date] = normalizeRecord(value as RecordValue)
+    }
+    setLearningRecords(normalizedRecords)
   }
 
   useEffect(() => {
@@ -46,11 +82,13 @@ export default function LearningCalendar() {
     calendarDays.push(day)
   }
 
-  // 日付が学習済みかチェック
+  // 日付が学習済みかチェック（選択レベル用）
   const isDayCompleted = (day: number | null) => {
     if (!day) return false
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    return learningRecords[dateStr] && learningRecords[dateStr].length > 0
+    const record = learningRecords[dateStr]
+    if (!record) return false
+    return (record[selectedLevel] || []).length > 0
   }
 
   // 今日かどうかチェック
@@ -60,10 +98,13 @@ export default function LearningCalendar() {
     return day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
   }
 
-  // 日付のURLを生成
+  // 日付のURLを生成（レベルパラメータ付き）
   const getDateUrl = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    return `/archive/${dateStr}`
+    if (selectedLevel === DEFAULT_LEVEL) {
+      return `/archive/${dateStr}`
+    }
+    return `/archive/${dateStr}?level=${selectedLevel}`
   }
 
   // 未来の日付かどうかチェック
@@ -78,6 +119,20 @@ export default function LearningCalendar() {
   // 月を変更
   const changeMonth = (delta: number) => {
     setCurrentDate(new Date(year, month + delta, 1))
+  }
+
+  // 今月の完了日数を計算（選択レベル用）
+  const getCompletedDaysCount = () => {
+    let count = 0
+    for (const [dateStr, record] of Object.entries(learningRecords)) {
+      const d = new Date(dateStr)
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        if ((record[selectedLevel] || []).length > 0) {
+          count++
+        }
+      }
+    }
+    return count
   }
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -111,6 +166,13 @@ export default function LearningCalendar() {
           </button>
         </div>
       </div>
+
+      {/* レベルタブ */}
+      <LevelTabs
+        selectedLevel={selectedLevel}
+        onLevelChange={setSelectedLevel}
+        className="mb-6"
+      />
 
       {/* カレンダーグリッド */}
       <div className="grid grid-cols-7 gap-2">
@@ -189,10 +251,7 @@ export default function LearningCalendar() {
         </div>
         <div className="ml-auto text-stone-600">
           <span className="font-bold text-[#eab308]">
-            {Object.keys(learningRecords).filter(date => {
-              const d = new Date(date)
-              return d.getMonth() === month && d.getFullYear() === year
-            }).length}
+            {getCompletedDaysCount()}
           </span>
           {' '}days this month
         </div>
