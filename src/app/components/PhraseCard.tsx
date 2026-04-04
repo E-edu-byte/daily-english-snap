@@ -677,17 +677,8 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
           {phrase.examples.map((example, exampleIndex) => {
             const lines = example.english.split('\n').filter(line => line.trim())
 
-            const exampleComplete = exampleMode === 'fillIn' && isExampleComplete(exampleIndex)
-
             return (
               <div key={exampleIndex} className="bg-stone-50 rounded-lg p-4 border relative overflow-hidden border-stone-200">
-                {/* 完了時のはなまる表示（右上） */}
-                {exampleComplete && (
-                  <div className="absolute top-2 right-2 flex items-center gap-2 animate-bounce-in">
-                    <span className="text-3xl">💮</span>
-                    <span className="text-red-500 font-bold text-lg">Great!</span>
-                  </div>
-                )}
                 <div className="space-y-3">
                   {lines.map((line, lineIndex) => {
                     const personMatch = line.match(/^([AB]):\s*(.+)/)
@@ -698,11 +689,19 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                       const isPlayingThisLine = isPlaying === speakId
                       const isActive = isPlayingThisLine && speakingPerson === person
                       const words = parseWords(text)
+                      const lineComplete = exampleMode === 'fillIn' && isLineComplete(exampleIndex, lineIndex, text)
 
                       return (
-                        <div key={lineIndex} className={`transition-all ${
+                        <div key={lineIndex} className={`relative transition-all ${
                           isActive ? 'bg-amber-100 px-2 py-1 rounded' : ''
                         }`}>
+                          {/* 行完了時のはなまる表示（右上） */}
+                          {lineComplete && (
+                            <div className="absolute top-0 right-0 flex items-center gap-1 animate-bounce-in">
+                              <span className="text-2xl">💮</span>
+                              <span className="text-red-500 font-bold text-sm">Great!</span>
+                            </div>
+                          )}
                           {/* A:/B: ラベルと音声ボタン */}
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-semibold text-stone-500">{person}:</span>
@@ -715,7 +714,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                             </button>
                           </div>
                           {/* 文章 */}
-                          <div className="pl-6">
+                          <div className="pl-6 pr-20">
                             {exampleMode === 'showAnswers' ? (
                               <span className={`font-medium ${isActive ? 'text-[#eab308] font-bold' : 'text-stone-900'}`}>
                                 {text}
