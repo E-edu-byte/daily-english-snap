@@ -83,3 +83,22 @@ body {
 .animate-slide-up {
   animation: slideUp 0.2s ease-out forwards;
 }
+
+/* はなまる表示のバウンスアニメーション */
+@keyframes bounceIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-bounce-in {
+  animation: bounceIn 0.4s ease-out forwards;
+}

@@ -357,6 +357,30 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     return wordStates[wordKey] || { typedChars: '', revealed: false }
   }
 
+  // 例文の全単語が完了したかチェック
+  const isExampleComplete = (exampleIndex: number): boolean => {
+    const example = phrase.examples[exampleIndex]
+    if (!example) return false
+
+    const lines = example.english.split('\n').filter(line => line.trim())
+
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+      const line = lines[lineIndex]
+      const personMatch = line.match(/^([AB]):\s*(.+)/)
+      const text = personMatch ? personMatch[2] : line
+      const words = parseWords(text)
+
+      for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+        const word = words[wordIndex]
+        const wordKey = getWordKey(exampleIndex, lineIndex, wordIndex)
+        const state = getWordState(wordKey)
+        const isComplete = state.revealed || state.typedChars.length >= word.length
+        if (!isComplete) return false
+      }
+    }
+    return true
+  }
+
   // フレーズを空欄付きで表示
   const renderPhraseWithBlank = () => {
     if (!phrase.blankWord) {
@@ -596,9 +620,12 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
         <div className="space-y-4">
           {phrase.examples.map((example, exampleIndex) => {
             const lines = example.english.split('\n').filter(line => line.trim())
+            const exampleComplete = exampleMode === 'fillIn' && isExampleComplete(exampleIndex)
 
             return (
-              <div key={exampleIndex} className="bg-stone-50 rounded-lg p-4 border border-stone-200">
+              <div key={exampleIndex} className={`bg-stone-50 rounded-lg p-4 border relative overflow-hidden ${
+                exampleComplete ? 'border-red-300 bg-red-50' : 'border-stone-200'
+              }`}>
                 <div className="flex items-start gap-2 mb-1">
                   <div className="flex-1 space-y-2">
                     {lines.map((line, lineIndex) => {
@@ -683,6 +710,14 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                   </div>
                 </div>
                 <p className="text-stone-600 text-sm whitespace-pre-wrap mt-2">{example.japanese}</p>
+
+                {/* 完了時のはなまる表示 */}
+                {exampleComplete && (
+                  <div className="absolute top-2 right-2 flex items-center gap-2 animate-bounce-in">
+                    <span className="text-3xl">💮</span>
+                    <span className="text-red-500 font-bold text-lg">Great!</span>
+                  </div>
+                )}
               </div>
             )
           })}
