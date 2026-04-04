@@ -6,12 +6,22 @@ import Link from 'next/link'
 import { ArrowLeft, Calendar, CheckCircle2, Circle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Lora } from 'next/font/google'
 import LevelTabs from '../components/LevelTabs'
-import { Level, DEFAULT_LEVEL, isValidLevel } from '../types'
+import { Level, DEFAULT_LEVEL, isValidLevel, isServiceAvailable, SERVICE_START_DATE } from '../types'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
 
 const ITEMS_PER_PAGE = 10
-const MAX_DAYS = 365 // 最大1年分
+
+// サービス開始日からの最大日数を計算
+function getMaxDays(): number {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const startDate = new Date(SERVICE_START_DATE)
+  startDate.setHours(0, 0, 0, 0)
+  const diffTime = today.getTime() - startDate.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  return Math.max(0, diffDays) // 今日は含まないので、昨日までの日数
+}
 
 // ことわざリスト
 const proverbs = [
@@ -81,14 +91,17 @@ function createBlankPhrase(phrase: string, blankWord: string): string {
   return phrase.replace(blankWord, '???')
 }
 
-// 過去の日付を取得（開始位置から指定件数）
-function getPastDates(startIndex: number, count: number) {
+// 過去の日付を取得（開始位置から指定件数、サービス開始日以降のみ）
+function getPastDates(startIndex: number, count: number, maxDays: number) {
   const dates = []
   const today = new Date()
-  for (let i = startIndex; i < startIndex + count && i < MAX_DAYS; i++) {
+  for (let i = startIndex; i < startIndex + count && i < maxDays; i++) {
     const date = new Date(today)
     date.setDate(today.getDate() - (i + 1)) // +1 because we start from yesterday
-    dates.push(date)
+    // サービス開始日以降のみ追加
+    if (isServiceAvailable(date)) {
+      dates.push(date)
+    }
   }
   return dates
 }
@@ -127,9 +140,10 @@ function ArchiveContent() {
   const selectedLevel: Level = isValidLevel(levelParam) ? levelParam : DEFAULT_LEVEL
   const currentPage = Math.max(1, parseInt(pageParam || '1', 10))
 
-  const totalPages = Math.ceil(MAX_DAYS / ITEMS_PER_PAGE)
+  const maxDays = getMaxDays()
+  const totalPages = Math.max(1, Math.ceil(maxDays / ITEMS_PER_PAGE))
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-  const pastDates = getPastDates(startIndex, ITEMS_PER_PAGE)
+  const pastDates = getPastDates(startIndex, ITEMS_PER_PAGE, maxDays)
 
   const [doneStates, setDoneStates] = useState<Record<string, boolean>>({})
 
@@ -373,7 +387,7 @@ function ArchiveContent() {
 
       {/* ページ情報 */}
       <p className="text-center text-sm text-stone-500 mt-3">
-        {startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, MAX_DAYS)} 件目
+        {maxDays > 0 ? `${startIndex + 1} - ${Math.min(startIndex + ITEMS_PER_PAGE, maxDays)} 件目` : 'まだアーカイブはありません'}
       </p>
     </div>
   )

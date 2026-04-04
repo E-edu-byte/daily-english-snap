@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Calendar, CheckCircle2, Circle } from 'lucide-react'
 import { Lora } from 'next/font/google'
-import { Level, DEFAULT_LEVEL, LEVELS } from '../types'
+import { Level, DEFAULT_LEVEL, LEVELS, isServiceAvailable } from '../types'
 import LevelTabs from './LevelTabs'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
@@ -77,14 +77,17 @@ function createBlankPhrase(phrase: string, blankWord: string): string {
   return phrase.replace(blankWord, '???')
 }
 
-// 過去N日間の日付を取得
+// 過去N日間の日付を取得（サービス開始日以降のみ）
 function getPastDates(days: number) {
   const dates = []
   const today = new Date()
   for (let i = 1; i <= days; i++) {
     const date = new Date(today)
     date.setDate(today.getDate() - i)
-    dates.push(date)
+    // サービス開始日以降のみ追加
+    if (isServiceAvailable(date)) {
+      dates.push(date)
+    }
   }
   return dates
 }

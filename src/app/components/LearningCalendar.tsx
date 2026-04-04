@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
 import Link from 'next/link'
 import LevelTabs from './LevelTabs'
-import { Level, DEFAULT_LEVEL, LEVELS } from '../types'
+import { Level, DEFAULT_LEVEL, LEVELS, isServiceAvailable } from '../types'
 
 // 旧形式から新形式への変換
 type OldRecordFormat = string[]
@@ -116,6 +116,13 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
     return checkDate > today
   }
 
+  // サービス開始前の日付かどうかチェック
+  const isBeforeServiceStart = (day: number | null) => {
+    if (!day) return false
+    const checkDate = new Date(year, month, day)
+    return !isServiceAvailable(checkDate)
+  }
+
   // 月を変更
   const changeMonth = (delta: number) => {
     setCurrentDate(new Date(year, month + delta, 1))
@@ -191,11 +198,13 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
           const completed = isDayCompleted(day)
           const today = isToday(day)
           const future = isFutureDate(day)
+          const beforeService = isBeforeServiceStart(day)
+          const isDisabled = future || beforeService
 
           const cellContent = day && (
             <div className="flex flex-col items-center justify-center gap-1">
               <span>{day}</span>
-              {completed && (
+              {completed && !beforeService && (
                 <span className="text-lg leading-none" title="学習完了">
                   📖
                 </span>
@@ -207,16 +216,16 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
             day
               ? today
                 ? 'bg-[#ffed4e] text-stone-900 font-bold ring-2 ring-[#eab308] shadow-md'
-                : completed
+                : completed && !beforeService
                 ? 'bg-gradient-to-br from-amber-100 to-orange-100 text-stone-800 shadow-sm'
-                : future
+                : isDisabled
                 ? 'bg-white text-stone-300'
                 : 'bg-white text-stone-600 hover:bg-amber-50 cursor-pointer'
               : ''
           }`
 
-          // 未来の日付はリンクなし
-          if (!day || future) {
+          // 未来の日付またはサービス開始前の日付はリンクなし
+          if (!day || isDisabled) {
             return (
               <div key={index} className={cellClass}>
                 {cellContent}
@@ -224,7 +233,7 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
             )
           }
 
-          // 今日または過去の日付はリンクあり
+          // サービス期間内の日付はリンクあり
           return (
             <Link
               key={index}
