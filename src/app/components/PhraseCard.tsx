@@ -209,6 +209,26 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     return `${phrase.id}-${exampleIndex}-${lineIndex}-${wordIndex}`
   }
 
+  // 全単語のキーと単語を順番に取得
+  const getAllWordKeysWithWords = useCallback((): Array<{ key: string; word: string }> => {
+    const result: Array<{ key: string; word: string }> = []
+
+    phrase.examples.forEach((example, exampleIndex) => {
+      const lines = example.english.split('\n').filter(line => line.trim())
+      lines.forEach((line, lineIndex) => {
+        const personMatch = line.match(/^([AB]):\s*(.+)/)
+        const text = personMatch ? personMatch[2] : line
+        const words = parseWords(text)
+        words.forEach((word, wordIndex) => {
+          const key = getWordKey(exampleIndex, lineIndex, wordIndex)
+          result.push({ key, word })
+        })
+      })
+    })
+
+    return result
+  }, [phrase.examples, parseWords, getWordKey])
+
   // フレーズが変わったら答えの状態をリセット
   useEffect(() => {
     setShowBlankAnswer(false)
@@ -225,6 +245,26 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
   const handleWordDeactivate = () => {
     setActiveWordKey(null)
   }
+
+  // 次の未完了単語を見つけてアクティブにする
+  const activateNextWord = useCallback((currentKey: string, updatedWordStates: Record<string, WordState>) => {
+    const allWords = getAllWordKeysWithWords()
+    const currentIndex = allWords.findIndex(w => w.key === currentKey)
+
+    // 現在の位置から後ろを検索
+    for (let i = currentIndex + 1; i < allWords.length; i++) {
+      const { key, word } = allWords[i]
+      const state = updatedWordStates[key] || { typedChars: '', revealed: false }
+      const isComplete = state.revealed || state.typedChars.length >= word.length
+      if (!isComplete) {
+        setActiveWordKey(key)
+        return
+      }
+    }
+
+    // 見つからなければ非アクティブ
+    setActiveWordKey(null)
+  }, [getAllWordKeysWithWords])
 
   // 文字を入力
   const handleWordType = (wordKey: string, word: string, char: string) => {
@@ -259,14 +299,17 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
         autoAddIndex++
       }
 
-      setWordStates(prev => ({
-        ...prev,
-        [wordKey]: { ...currentState, typedChars: newTypedChars }
-      }))
+      const updatedState = { ...currentState, typedChars: newTypedChars }
+      const updatedWordStates = {
+        ...wordStates,
+        [wordKey]: updatedState
+      }
 
-      // 完了したら次の単語へ
+      setWordStates(updatedWordStates)
+
+      // 完了したら次の単語へ自動移動
       if (newTypedChars.length >= word.length) {
-        setActiveWordKey(null)
+        activateNextWord(wordKey, updatedWordStates)
       }
     }
     // 不正解は無視
