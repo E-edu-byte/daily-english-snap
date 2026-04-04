@@ -76,24 +76,25 @@ function ArchiveDateContentInner({
       {/* 日付ヘッダー */}
       <div className="text-center mb-8">
         <p className="text-stone-500 text-sm mb-2">アーカイブ</p>
-        <h1 className={`text-2xl md:text-3xl font-bold text-stone-800 mb-4 ${lora.className}`}>
+        <h1 className={`text-2xl md:text-3xl font-bold text-stone-800 ${lora.className}`}>
           {formattedDate}
         </h1>
-
-        {/* レベルタブ */}
-        <LevelTabs
-          selectedLevel={selectedLevel}
-          onLevelChange={handleLevelChange}
-        />
       </div>
 
       {/* ことわざ */}
       {proverb && <DailyProverbArchive proverb={proverb} />}
 
       {/* フレーズ */}
-      <h2 className={`text-2xl md:text-4xl font-bold text-emerald-600 font-serif mb-6 text-center ${lora.className}`}>
+      <h2 className={`text-2xl md:text-4xl font-bold text-emerald-600 font-serif mb-4 text-center ${lora.className}`}>
         Today&apos;s Quiz
       </h2>
+
+      {/* レベルタブ */}
+      <LevelTabs
+        selectedLevel={selectedLevel}
+        onLevelChange={handleLevelChange}
+        className="mb-6"
+      />
       {currentPhrase && (
         <PhraseCard phrase={currentPhrase} date={dateStr} level={selectedLevel} />
       )}
