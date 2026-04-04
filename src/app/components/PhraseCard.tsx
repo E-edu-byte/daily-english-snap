@@ -663,11 +663,19 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
 
                         return (
                           <div key={lineIndex} className={`flex items-start gap-2 transition-all ${
-                            lineComplete ? 'bg-red-50 px-2 py-1 rounded border border-red-200' :
                             isActive ? 'bg-amber-100 px-2 py-1 rounded' : ''
                           }`}>
+                            {/* A:/B: ラベルとGreat!バッジ */}
+                            <span className="font-semibold text-stone-500 flex items-center gap-1 flex-shrink-0">
+                              {person}:
+                              {lineComplete && (
+                                <span className="flex items-center gap-0.5 animate-bounce-in">
+                                  <span className="text-lg">💮</span>
+                                  <span className="text-red-500 font-bold text-[10px]">Great!</span>
+                                </span>
+                              )}
+                            </span>
                             <div className="flex-1">
-                              <span className="font-semibold text-stone-500 mr-2">{person}:</span>
                               {exampleMode === 'showAnswers' ? (
                                 <span className={`font-medium ${isActive ? 'text-[#eab308] font-bold' : 'text-stone-900'}`}>
                                   {text}
@@ -693,13 +701,6 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                                 </span>
                               )}
                             </div>
-                            {/* 完了時のはなまる */}
-                            {lineComplete && (
-                              <span className="flex items-center gap-1 animate-bounce-in">
-                                <span className="text-xl">💮</span>
-                                <span className="text-red-500 font-bold text-xs">Great!</span>
-                              </span>
-                            )}
                             <button
                               onClick={() => speakPerson(text, person as 'A' | 'B', speakId)}
                               className="p-1 hover:bg-amber-300 bg-amber-400 rounded-full transition-all hover-scale flex-shrink-0"
