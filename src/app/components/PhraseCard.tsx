@@ -679,50 +679,32 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
 
             return (
               <div key={exampleIndex} className="bg-stone-50 rounded-lg p-4 border relative overflow-hidden border-stone-200">
-                <div className="flex items-start gap-2 mb-1">
-                  <div className="flex-1 space-y-2">
-                    {lines.map((line, lineIndex) => {
-                      const personMatch = line.match(/^([AB]):\s*(.+)/)
+                <div className="space-y-3">
+                  {lines.map((line, lineIndex) => {
+                    const personMatch = line.match(/^([AB]):\s*(.+)/)
 
-                      if (personMatch) {
-                        const [, person, text] = personMatch
-                        const speakId = `example-${exampleIndex}-${person}-${lineIndex}`
-                        const isPlayingThisLine = isPlaying === speakId
-                        const isActive = isPlayingThisLine && speakingPerson === person
-                        const words = parseWords(text)
-                        const lineComplete = exampleMode === 'fillIn' && isLineComplete(exampleIndex, lineIndex, text)
+                    if (personMatch) {
+                      const [, person, text] = personMatch
+                      const speakId = `example-${exampleIndex}-${person}-${lineIndex}`
+                      const isPlayingThisLine = isPlaying === speakId
+                      const isActive = isPlayingThisLine && speakingPerson === person
+                      const words = parseWords(text)
+                      const lineComplete = exampleMode === 'fillIn' && isLineComplete(exampleIndex, lineIndex, text)
 
-                        return (
-                          <div key={lineIndex} className={`flex items-start gap-2 transition-all ${
-                            isActive ? 'bg-amber-100 px-2 py-1 rounded' : ''
-                          }`}>
-                            <span className="font-semibold text-stone-500 flex-shrink-0">{person}:</span>
-                            <div className="flex-1">
-                              {exampleMode === 'showAnswers' ? (
-                                <span className={`font-medium ${isActive ? 'text-[#eab308] font-bold' : 'text-stone-900'}`}>
-                                  {text}
-                                </span>
-                              ) : (
-                                <span className="inline-flex flex-wrap gap-1.5">
-                                  {words.map((word, wordIndex) => {
-                                    const wordKey = getWordKey(exampleIndex, lineIndex, wordIndex)
-                                    return (
-                                      <FillInWord
-                                        key={wordKey}
-                                        word={word}
-                                        state={getWordState(wordKey)}
-                                        isActive={activeWordKey === wordKey}
-                                        onTap={() => handleWordTap(wordKey)}
-                                        onType={(char) => handleWordType(wordKey, word, char)}
-                                        onReveal={() => handleWordReveal(wordKey)}
-                                        onReset={() => handleWordReset(wordKey)}
-                                        onDeactivate={handleWordDeactivate}
-                                      />
-                                    )
-                                  })}
-                                </span>
-                              )}
+                      return (
+                        <div key={lineIndex} className={`relative transition-all ${
+                          isActive ? 'bg-amber-100 px-2 py-1 rounded' : ''
+                        }`}>
+                          {/* 行完了時のはなまる（音声ボタン付近に重ねて表示） */}
+                          {lineComplete && (
+                            <div className="absolute top-0 right-0 flex items-center gap-1 animate-bounce-in z-10">
+                              <span className="text-2xl">💮</span>
+                              <span className="text-red-500 font-bold text-sm">Great!</span>
                             </div>
+                          )}
+                          {/* A:/B: ラベルと音声ボタン */}
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-stone-500">{person}:</span>
                             <button
                               onClick={() => speakPerson(text, person as 'A' | 'B', speakId)}
                               className="p-1 hover:bg-amber-300 bg-amber-400 rounded-full transition-all hover-scale flex-shrink-0"
@@ -730,47 +712,67 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                             >
                               <Volume2 className={`w-3.5 h-3.5 text-stone-900 ${isPlayingThisLine ? 'animate-pulse' : ''}`} />
                             </button>
-                            {/* 行完了時のはなまる */}
-                            {lineComplete && (
-                              <span className="flex items-center gap-1 animate-bounce-in flex-shrink-0">
-                                <span className="text-xl">💮</span>
-                                <span className="text-red-500 font-bold text-xs">Great!</span>
+                          </div>
+                          {/* 文章（一段下げ） */}
+                          <div className="pl-6">
+                            {exampleMode === 'showAnswers' ? (
+                              <span className={`font-medium ${isActive ? 'text-[#eab308] font-bold' : 'text-stone-900'}`}>
+                                {text}
+                              </span>
+                            ) : (
+                              <span className="inline-flex flex-wrap gap-1.5">
+                                {words.map((word, wordIndex) => {
+                                  const wordKey = getWordKey(exampleIndex, lineIndex, wordIndex)
+                                  return (
+                                    <FillInWord
+                                      key={wordKey}
+                                      word={word}
+                                      state={getWordState(wordKey)}
+                                      isActive={activeWordKey === wordKey}
+                                      onTap={() => handleWordTap(wordKey)}
+                                      onType={(char) => handleWordType(wordKey, word, char)}
+                                      onReveal={() => handleWordReveal(wordKey)}
+                                      onReset={() => handleWordReset(wordKey)}
+                                      onDeactivate={handleWordDeactivate}
+                                    />
+                                  )
+                                })}
                               </span>
                             )}
                           </div>
-                        )
-                      }
-
-                      // A/B形式でない行
-                      const words = parseWords(line)
-                      return (
-                        <div key={lineIndex}>
-                          {exampleMode === 'showAnswers' ? (
-                            <p className="font-medium text-stone-900">{line}</p>
-                          ) : (
-                            <span className="inline-flex flex-wrap gap-1.5">
-                              {words.map((word, wordIndex) => {
-                                const wordKey = getWordKey(exampleIndex, lineIndex, wordIndex)
-                                return (
-                                  <FillInWord
-                                    key={wordKey}
-                                    word={word}
-                                    state={getWordState(wordKey)}
-                                    isActive={activeWordKey === wordKey}
-                                    onTap={() => handleWordTap(wordKey)}
-                                    onType={(char) => handleWordType(wordKey, word, char)}
-                                    onReveal={() => handleWordReveal(wordKey)}
-                                    onReset={() => handleWordReset(wordKey)}
-                                    onDeactivate={handleWordDeactivate}
-                                  />
-                                )
-                              })}
-                            </span>
-                          )}
                         </div>
                       )
-                    })}
-                  </div>
+                    }
+
+                    // A/B形式でない行
+                    const words = parseWords(line)
+                    return (
+                      <div key={lineIndex}>
+                        {exampleMode === 'showAnswers' ? (
+                          <p className="font-medium text-stone-900">{line}</p>
+                        ) : (
+                          <span className="inline-flex flex-wrap gap-1.5">
+                            {words.map((word, wordIndex) => {
+                              const wordKey = getWordKey(exampleIndex, lineIndex, wordIndex)
+                              return (
+                                <FillInWord
+                                  key={wordKey}
+                                  word={word}
+                                  state={getWordState(wordKey)}
+                                  isActive={activeWordKey === wordKey}
+                                  onTap={() => handleWordTap(wordKey)}
+                                  onType={(char) => handleWordType(wordKey, word, char)}
+                                  onReveal={() => handleWordReveal(wordKey)}
+                                  onReset={() => handleWordReset(wordKey)}
+                                  onDeactivate={handleWordDeactivate}
+                                />
+                              )
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
                 <p className="text-stone-600 text-sm whitespace-pre-wrap mt-2">{example.japanese}</p>
               </div>
