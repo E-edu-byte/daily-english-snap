@@ -357,26 +357,17 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     return wordStates[wordKey] || { typedChars: '', revealed: false }
   }
 
-  // 例文の全単語が完了したかチェック
-  const isExampleComplete = (exampleIndex: number): boolean => {
-    const example = phrase.examples[exampleIndex]
-    if (!example) return false
+  // 特定の行の全単語が完了したかチェック
+  const isLineComplete = (exampleIndex: number, lineIndex: number, text: string): boolean => {
+    const words = parseWords(text)
+    if (words.length === 0) return false
 
-    const lines = example.english.split('\n').filter(line => line.trim())
-
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      const line = lines[lineIndex]
-      const personMatch = line.match(/^([AB]):\s*(.+)/)
-      const text = personMatch ? personMatch[2] : line
-      const words = parseWords(text)
-
-      for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
-        const word = words[wordIndex]
-        const wordKey = getWordKey(exampleIndex, lineIndex, wordIndex)
-        const state = getWordState(wordKey)
-        const isComplete = state.revealed || state.typedChars.length >= word.length
-        if (!isComplete) return false
-      }
+    for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+      const word = words[wordIndex]
+      const wordKey = getWordKey(exampleIndex, lineIndex, wordIndex)
+      const state = getWordState(wordKey)
+      const isComplete = state.revealed || state.typedChars.length >= word.length
+      if (!isComplete) return false
     }
     return true
   }
@@ -620,12 +611,9 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
         <div className="space-y-4">
           {phrase.examples.map((example, exampleIndex) => {
             const lines = example.english.split('\n').filter(line => line.trim())
-            const exampleComplete = exampleMode === 'fillIn' && isExampleComplete(exampleIndex)
 
             return (
-              <div key={exampleIndex} className={`bg-stone-50 rounded-lg p-4 border relative overflow-hidden ${
-                exampleComplete ? 'border-red-300 bg-red-50' : 'border-stone-200'
-              }`}>
+              <div key={exampleIndex} className="bg-stone-50 rounded-lg p-4 border relative overflow-hidden border-stone-200">
                 <div className="flex items-start gap-2 mb-1">
                   <div className="flex-1 space-y-2">
                     {lines.map((line, lineIndex) => {
@@ -637,9 +625,13 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                         const isPlayingThisLine = isPlaying === speakId
                         const isActive = isPlayingThisLine && speakingPerson === person
                         const words = parseWords(text)
+                        const lineComplete = exampleMode === 'fillIn' && isLineComplete(exampleIndex, lineIndex, text)
 
                         return (
-                          <div key={lineIndex} className={`flex items-start gap-2 transition-all ${isActive ? 'bg-amber-100 px-2 py-1 rounded' : ''}`}>
+                          <div key={lineIndex} className={`flex items-start gap-2 transition-all ${
+                            lineComplete ? 'bg-red-50 px-2 py-1 rounded border border-red-200' :
+                            isActive ? 'bg-amber-100 px-2 py-1 rounded' : ''
+                          }`}>
                             <div className="flex-1">
                               <span className="font-semibold text-stone-500 mr-2">{person}:</span>
                               {exampleMode === 'showAnswers' ? (
@@ -667,6 +659,13 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                                 </span>
                               )}
                             </div>
+                            {/* 完了時のはなまる */}
+                            {lineComplete && (
+                              <span className="flex items-center gap-1 animate-bounce-in">
+                                <span className="text-xl">💮</span>
+                                <span className="text-red-500 font-bold text-xs">Great!</span>
+                              </span>
+                            )}
                             <button
                               onClick={() => speakPerson(text, person as 'A' | 'B', speakId)}
                               className="p-1 hover:bg-amber-300 bg-amber-400 rounded-full transition-all hover-scale flex-shrink-0"
@@ -710,14 +709,6 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                   </div>
                 </div>
                 <p className="text-stone-600 text-sm whitespace-pre-wrap mt-2">{example.japanese}</p>
-
-                {/* 完了時のはなまる表示 */}
-                {exampleComplete && (
-                  <div className="absolute top-2 right-2 flex items-center gap-2 animate-bounce-in">
-                    <span className="text-3xl">💮</span>
-                    <span className="text-red-500 font-bold text-lg">Great!</span>
-                  </div>
-                )}
               </div>
             )
           })}
