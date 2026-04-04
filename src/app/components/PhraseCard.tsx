@@ -209,6 +209,11 @@ function getTodayJST(): string {
   return jst.toISOString().split('T')[0]
 }
 
+// 穴埋め状態のlocalStorageキーを生成
+function getWordStatesStorageKey(phraseId: string): string {
+  return `fillInStates-${phraseId}`
+}
+
 export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: PhraseCardProps) {
   const [isPlaying, setIsPlaying] = useState<string | null>(null)
   const [speakingPerson, setSpeakingPerson] = useState<'A' | 'B' | null>(null)
@@ -216,6 +221,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
   const [exampleMode, setExampleMode] = useState<'fillIn' | 'showAnswers'>('fillIn')
   const [wordStates, setWordStates] = useState<Record<string, WordState>>({})
   const [activeWordKey, setActiveWordKey] = useState<string | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
   const todayJST = getTodayJST()
 
   // テキストを単語に分割（句読点は単語にくっつける）
@@ -249,12 +255,40 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     return result
   }, [phrase.examples, parseWords, getWordKey])
 
-  // フレーズが変わったら答えの状態をリセット
+  // フレーズが変わったらlocalStorageから状態を読み込む
   useEffect(() => {
     setShowBlankAnswer(false)
-    setWordStates({})
     setActiveWordKey(null)
+    setIsInitialized(false)
+
+    // localStorageから穴埋め状態を読み込む
+    if (typeof window !== 'undefined') {
+      const storageKey = getWordStatesStorageKey(phrase.id)
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          setWordStates(parsed)
+        } catch {
+          setWordStates({})
+        }
+      } else {
+        setWordStates({})
+      }
+    }
+    setIsInitialized(true)
   }, [phrase.id])
+
+  // wordStatesが変わったらlocalStorageに保存
+  useEffect(() => {
+    if (!isInitialized) return
+    if (typeof window === 'undefined') return
+
+    const storageKey = getWordStatesStorageKey(phrase.id)
+    if (Object.keys(wordStates).length > 0) {
+      localStorage.setItem(storageKey, JSON.stringify(wordStates))
+    }
+  }, [wordStates, phrase.id, isInitialized])
 
   // 単語をタップ
   const handleWordTap = (wordKey: string) => {
