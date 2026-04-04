@@ -88,7 +88,7 @@ function HomeContentInner({ phrases, proverb, pastPhrases }: HomeContentProps) {
       )}
 
       {/* 過去の格言、クイズ */}
-      <PastArchive pastPhrases={currentPastPhrases} selectedLevel={selectedLevel} />
+      <PastArchive pastPhrases={currentPastPhrases} selectedLevel={selectedLevel} onLevelChange={handleLevelChange} />
     </div>
   )
 }

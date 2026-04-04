@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Calendar, CheckCircle2, Circle } from 'lucide-react'
 import { Lora } from 'next/font/google'
 import { Level, DEFAULT_LEVEL, LEVELS } from '../types'
+import LevelTabs from './LevelTabs'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
 
@@ -115,9 +116,10 @@ function normalizeRecord(value: RecordValue): NewRecordFormat {
 interface PastArchiveProps {
   pastPhrases?: Record<string, { phrase: string; blankWord: string }>
   selectedLevel?: Level
+  onLevelChange?: (level: Level) => void
 }
 
-export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_LEVEL }: PastArchiveProps) {
+export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_LEVEL, onLevelChange }: PastArchiveProps) {
   const pastDates = getPastDates(7)  // 1週間分
   const [doneStates, setDoneStates] = useState<Record<string, boolean>>({})
 
@@ -214,6 +216,16 @@ export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_
             過去の格言・クイズ
           </h2>
         </div>
+
+        {/* レベルタブ */}
+        {onLevelChange && (
+          <LevelTabs
+            selectedLevel={selectedLevel}
+            onLevelChange={onLevelChange}
+            className="mb-4"
+          />
+        )}
+
         <p className="text-stone-600 text-sm md:text-base">
           <span className="hidden md:inline">日付をクリックして過去の学習内容を復習しましょう</span>
           <span className="md:hidden">日付をタップして復習しよう！</span>
