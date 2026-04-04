@@ -25,10 +25,11 @@ interface FillInWordProps {
   onTap: () => void
   onType: (char: string) => void
   onReveal: () => void
+  onReset: () => void
   onDeactivate: () => void
 }
 
-function FillInWord({ word, state, isActive, onTap, onType, onReveal, onDeactivate }: FillInWordProps) {
+function FillInWord({ word, state, isActive, onTap, onType, onReveal, onReset, onDeactivate }: FillInWordProps) {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -95,7 +96,12 @@ function FillInWord({ word, state, isActive, onTap, onType, onReveal, onDeactiva
   // 長押し開始
   const handleTouchStart = () => {
     longPressTimer.current = setTimeout(() => {
-      onReveal()
+      // 完了済みならリセット、未完了なら答え表示
+      if (isComplete) {
+        onReset()
+      } else {
+        onReveal()
+      }
     }, 500)
   }
 
@@ -110,7 +116,12 @@ function FillInWord({ word, state, isActive, onTap, onType, onReveal, onDeactiva
   // マウス用長押し
   const handleMouseDown = () => {
     longPressTimer.current = setTimeout(() => {
-      onReveal()
+      // 完了済みならリセット、未完了なら答え表示
+      if (isComplete) {
+        onReset()
+      } else {
+        onReveal()
+      }
     }, 500)
   }
 
@@ -331,6 +342,14 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
       [wordKey]: { typedChars: '', revealed: true }
     }))
     setActiveWordKey(null)
+  }
+
+  // 長押しでリセット（穴埋めに戻す）
+  const handleWordReset = (wordKey: string) => {
+    setWordStates(prev => ({
+      ...prev,
+      [wordKey]: { typedChars: '', revealed: false }
+    }))
   }
 
   // 単語の状態を取得
@@ -613,6 +632,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                                         onTap={() => handleWordTap(wordKey)}
                                         onType={(char) => handleWordType(wordKey, word, char)}
                                         onReveal={() => handleWordReveal(wordKey)}
+                                        onReset={() => handleWordReset(wordKey)}
                                         onDeactivate={handleWordDeactivate}
                                       />
                                     )
@@ -650,6 +670,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                                     onTap={() => handleWordTap(wordKey)}
                                     onType={(char) => handleWordType(wordKey, word, char)}
                                     onReveal={() => handleWordReveal(wordKey)}
+                                    onReset={() => handleWordReset(wordKey)}
                                     onDeactivate={handleWordDeactivate}
                                   />
                                 )
