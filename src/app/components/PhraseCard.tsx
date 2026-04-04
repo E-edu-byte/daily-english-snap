@@ -418,6 +418,12 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     window.speechSynthesis.speak(utterance)
   }
 
+  // モバイル判定
+  const isMobile = () => {
+    if (typeof window === 'undefined') return false
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  }
+
   // A/B個別の音声再生（モバイル対応改善）
   const speakPerson = (text: string, person: 'A' | 'B', id: string) => {
     // 既に再生中の場合は停止
@@ -431,6 +437,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     }
 
     const voices = window.speechSynthesis.getVoices()
+    const mobile = isMobile()
 
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = 'en-US'
@@ -443,12 +450,14 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
         (voice.name.includes('Male') || voice.name.includes('David') || voice.name.includes('Mark'))
       ) || voices.find(voice => voice.lang.startsWith('en') && !voice.name.includes('Female'))
       if (maleVoice) utterance.voice = maleVoice
-      utterance.pitch = 0.9  // 男性らしい低めのトーン
+      // スマホ: ピッチを大きく下げる / PC: 通常設定
+      utterance.pitch = mobile ? 0.7 : 0.9
       utterance.volume = 1.0
     } else {
       // Bさん: デフォルトの声
-      utterance.pitch = 1.0  // デフォルトのトーン
-      utterance.volume = 0.7
+      // スマホ: ピッチを上げる / PC: 通常設定
+      utterance.pitch = mobile ? 1.3 : 1.0
+      utterance.volume = mobile ? 0.85 : 0.7
     }
 
     setIsPlaying(id)
