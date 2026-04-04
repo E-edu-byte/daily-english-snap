@@ -23,11 +23,14 @@ interface FillInWordProps {
   state: WordState
   isActive: boolean
   onTap: () => void
+  onType: (char: string) => void
   onReveal: () => void
+  onDeactivate: () => void
 }
 
-function FillInWord({ word, state, isActive, onTap, onReveal }: FillInWordProps) {
+function FillInWord({ word, state, isActive, onTap, onType, onReveal, onDeactivate }: FillInWordProps) {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   // 完了判定（全文字入力済み or 表示済み）
   const isComplete = state.revealed || state.typedChars.length >= word.length
@@ -55,11 +58,35 @@ function FillInWord({ word, state, isActive, onTap, onReveal }: FillInWordProps)
     return result
   }
 
+  // アクティブになったらフォーカス
+  useEffect(() => {
+    if (isActive && inputRef.current) {
+      inputRef.current.focus()
+    }
+  }, [isActive])
+
+  // 入力処理
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value.length > 0) {
+      const lastChar = value[value.length - 1]
+      onType(lastChar)
+      e.target.value = '' // クリア
+    }
+  }
+
+  // キーボードイベント（PC対応）
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onDeactivate()
+    }
+  }
+
   // 長押し開始
   const handleTouchStart = () => {
     longPressTimer.current = setTimeout(() => {
       onReveal()
-    }, 500) // 500ms長押しで表示
+    }, 500)
   }
 
   // 長押しキャンセル
@@ -84,16 +111,21 @@ function FillInWord({ word, state, isActive, onTap, onReveal }: FillInWordProps)
     }
   }
 
+  // タップ/クリック処理
+  const handleClick = () => {
+    if (!isComplete) {
+      onTap()
+      // 少し遅延させてフォーカス（モバイル対応）
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 50)
+    }
+  }
+
   return (
     <span
-      onClick={() => !isComplete && onTap()}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       className={`
-        font-mono tracking-wider px-1 py-0.5 rounded cursor-pointer select-none inline-block
+        relative font-mono tracking-wider px-1 py-0.5 rounded cursor-pointer select-none inline-block
         ${isComplete
           ? 'text-emerald-700 bg-emerald-50'
           : isActive
@@ -101,9 +133,35 @@ function FillInWord({ word, state, isActive, onTap, onReveal }: FillInWordProps)
             : 'bg-stone-200 text-stone-700 hover:bg-stone-300'
         }
       `}
+      onClick={handleClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
     >
       {displayText()}
       {isActive && !isComplete && <span className="animate-pulse">|</span>}
+      {/* 透明な入力フィールド（キーボード表示用） */}
+      {isActive && !isComplete && (
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="text"
+          autoComplete="off"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          style={{ fontSize: '16px' }} // iOSのズーム防止
+          onChange={handleInput}
+          onKeyDown={handleKeyDown}
+          onBlur={() => {
+            // モバイルでキーボードが閉じた時に非アクティブ化しない
+            // 代わりに他の単語をタップした時に切り替わる
+          }}
+        />
+      )}
     </span>
   )
 }
@@ -138,8 +196,6 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
   const [exampleMode, setExampleMode] = useState<'fillIn' | 'showAnswers'>('fillIn')
   const [wordStates, setWordStates] = useState<Record<string, WordState>>({})
   const [activeWordKey, setActiveWordKey] = useState<string | null>(null)
-  const [activeWord, setActiveWord] = useState<string>('')  // アクティブな単語の文字列
-  const mobileInputRef = useRef<HTMLInputElement>(null)
   const todayJST = getTodayJST()
 
   // テキストを単語に分割（句読点は単語にくっつける）
@@ -158,23 +214,16 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     setShowBlankAnswer(false)
     setWordStates({})
     setActiveWordKey(null)
-    setActiveWord('')
   }, [phrase.id])
 
-  // アクティブになったらモバイル入力欄にフォーカス
-  useEffect(() => {
-    if (activeWordKey && mobileInputRef.current) {
-      // 少し遅延させてフォーカス（モバイルでの確実性向上）
-      setTimeout(() => {
-        mobileInputRef.current?.focus()
-      }, 100)
-    }
-  }, [activeWordKey])
-
   // 単語をタップ
-  const handleWordTap = (wordKey: string, word: string) => {
+  const handleWordTap = (wordKey: string) => {
     setActiveWordKey(wordKey)
-    setActiveWord(word)
+  }
+
+  // 単語を非アクティブ化
+  const handleWordDeactivate = () => {
+    setActiveWordKey(null)
   }
 
   // 文字を入力
@@ -230,44 +279,6 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
       [wordKey]: { typedChars: '', revealed: true }
     }))
     setActiveWordKey(null)
-    setActiveWord('')
-  }
-
-  // モバイル入力欄の入力処理
-  const handleMobileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!activeWordKey || !activeWord) return
-
-    const inputValue = e.target.value
-    if (inputValue.length === 0) return
-
-    // 最後に入力された文字を取得
-    const lastChar = inputValue[inputValue.length - 1]
-
-    // 入力処理
-    handleWordType(activeWordKey, activeWord, lastChar)
-
-    // 入力欄をクリア
-    e.target.value = ''
-  }
-
-  // 入力完了チェック（完了したらactiveをクリア）
-  const checkCompletion = useCallback(() => {
-    if (!activeWordKey || !activeWord) return
-    const state = wordStates[activeWordKey]
-    if (state && (state.revealed || state.typedChars.length >= activeWord.length)) {
-      setActiveWordKey(null)
-      setActiveWord('')
-    }
-  }, [activeWordKey, activeWord, wordStates])
-
-  useEffect(() => {
-    checkCompletion()
-  }, [checkCompletion])
-
-  // 入力バーを閉じる
-  const closeInputBar = () => {
-    setActiveWordKey(null)
-    setActiveWord('')
   }
 
   // 単語の状態を取得
@@ -574,8 +585,10 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                                       word={word}
                                       state={getWordState(wordKey)}
                                       isActive={activeWordKey === wordKey}
-                                      onTap={() => handleWordTap(wordKey, word)}
+                                      onTap={() => handleWordTap(wordKey)}
+                                      onType={(char) => handleWordType(wordKey, word, char)}
                                       onReveal={() => handleWordReveal(wordKey)}
+                                      onDeactivate={handleWordDeactivate}
                                     />
                                   )
                                 })}
@@ -601,8 +614,10 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                                     word={word}
                                     state={getWordState(wordKey)}
                                     isActive={activeWordKey === wordKey}
-                                    onTap={() => handleWordTap(wordKey, word)}
+                                    onTap={() => handleWordTap(wordKey)}
+                                    onType={(char) => handleWordType(wordKey, word, char)}
                                     onReveal={() => handleWordReveal(wordKey)}
+                                    onDeactivate={handleWordDeactivate}
                                   />
                                 )
                               })}
@@ -626,56 +641,6 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
           })}
         </div>
       </div>
-
-      {/* モバイル入力バー */}
-      {activeWordKey && exampleMode === 'fillIn' && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-emerald-500 shadow-lg p-4 z-50 animate-slide-up">
-          <div className="max-w-md mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <p className="text-xs text-stone-500 mb-1">入力中の単語:</p>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-lg bg-amber-100 px-2 py-1 rounded">
-                    {(() => {
-                      const state = getWordState(activeWordKey)
-                      let display = ''
-                      for (let i = 0; i < activeWord.length; i++) {
-                        if (i < state.typedChars.length) {
-                          display += activeWord[i]
-                        } else if (/[a-zA-Z]/.test(activeWord[i])) {
-                          display += '_'
-                        } else {
-                          display += activeWord[i]
-                        }
-                      }
-                      return display
-                    })()}
-                    <span className="animate-pulse text-emerald-500">|</span>
-                  </span>
-                </div>
-              </div>
-              <input
-                ref={mobileInputRef}
-                type="text"
-                inputMode="text"
-                autoComplete="off"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck={false}
-                className="w-20 h-12 text-center text-xl border-2 border-emerald-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                placeholder="入力"
-                onChange={handleMobileInput}
-              />
-              <button
-                onClick={closeInputBar}
-                className="p-2 text-stone-500 hover:text-stone-700"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
