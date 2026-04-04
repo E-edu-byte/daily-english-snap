@@ -300,14 +300,26 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     setActiveWordKey(null)
   }
 
-  // 次の未完了単語を見つけてアクティブにする
+  // 次の未完了単語を見つけてアクティブにする（同じ例文内のみ）
   const activateNextWord = useCallback((currentKey: string, updatedWordStates: Record<string, WordState>) => {
     const allWords = getAllWordKeysWithWords()
     const currentIndex = allWords.findIndex(w => w.key === currentKey)
 
-    // 現在の位置から後ろを検索
+    // 現在のキーから例文インデックスを抽出（形式: phraseId-exampleIndex-lineIndex-wordIndex）
+    const keyParts = currentKey.split('-')
+    const currentExampleIndex = keyParts[keyParts.length - 3] // exampleIndexは後ろから3番目
+
+    // 現在の位置から後ろを検索（同じ例文内のみ）
     for (let i = currentIndex + 1; i < allWords.length; i++) {
       const { key, word } = allWords[i]
+
+      // 例文が変わったら終了
+      const nextKeyParts = key.split('-')
+      const nextExampleIndex = nextKeyParts[nextKeyParts.length - 3]
+      if (nextExampleIndex !== currentExampleIndex) {
+        break
+      }
+
       const state = updatedWordStates[key] || { typedChars: '', revealed: false }
       const isComplete = state.revealed || state.typedChars.length >= word.length
       if (!isComplete) {
@@ -316,7 +328,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
       }
     }
 
-    // 見つからなければ非アクティブ
+    // 見つからなければ非アクティブ（例文完了）
     setActiveWordKey(null)
   }, [getAllWordKeysWithWords])
 
