@@ -437,28 +437,18 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     utterance.rate = 0.9
 
     if (person === 'A') {
-      // Aさん: 男性風（低いピッチ）
-      // PC/モバイル両方で明確に違いを出すためピッチを大きく下げる
+      // Aさん: 男性の声
       const maleVoice = voices.find(voice =>
         voice.lang.startsWith('en') &&
-        (voice.name.includes('Male') || voice.name.includes('David') ||
-         voice.name.includes('Mark') || voice.name.includes('Daniel') ||
-         voice.name.includes('James') || voice.name.includes('Google US English Male'))
-      )
+        (voice.name.includes('Male') || voice.name.includes('David') || voice.name.includes('Mark'))
+      ) || voices.find(voice => voice.lang.startsWith('en') && !voice.name.includes('Female'))
       if (maleVoice) utterance.voice = maleVoice
-      utterance.pitch = 0.7  // より低く（モバイルでも違いがわかるように）
+      utterance.pitch = 0.9  // 男性らしい低めのトーン
       utterance.volume = 1.0
     } else {
-      // Bさん: 女性風（高いピッチ）
-      const femaleVoice = voices.find(voice =>
-        voice.lang.startsWith('en') &&
-        (voice.name.includes('Female') || voice.name.includes('Samantha') ||
-         voice.name.includes('Victoria') || voice.name.includes('Karen') ||
-         voice.name.includes('Google US English Female'))
-      )
-      if (femaleVoice) utterance.voice = femaleVoice
-      utterance.pitch = 1.3  // より高く（モバイルでも違いがわかるように）
-      utterance.volume = 0.85
+      // Bさん: デフォルトの声
+      utterance.pitch = 1.0  // デフォルトのトーン
+      utterance.volume = 0.7
     }
 
     setIsPlaying(id)
@@ -623,16 +613,10 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                             </div>
                             <button
                               onClick={() => speakPerson(text, person as 'A' | 'B', speakId)}
-                              className={`p-1 rounded-full transition-all hover-scale flex-shrink-0 ${
-                                person === 'A'
-                                  ? 'hover:bg-blue-200 bg-blue-100'
-                                  : 'hover:bg-pink-200 bg-pink-100'
-                              }`}
+                              className="p-1 hover:bg-amber-300 bg-amber-400 rounded-full transition-all hover-scale flex-shrink-0"
                               title={`${person}の音声を再生`}
                             >
-                              <Volume2 className={`w-3.5 h-3.5 ${
-                                person === 'A' ? 'text-blue-600' : 'text-pink-600'
-                              } ${isPlayingThisLine ? 'animate-pulse' : ''}`} />
+                              <Volume2 className={`w-3.5 h-3.5 text-stone-900 ${isPlayingThisLine ? 'animate-pulse' : ''}`} />
                             </button>
                           </div>
                         )
