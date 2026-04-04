@@ -409,8 +409,8 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     window.speechSynthesis.speak(utterance)
   }
 
-  // 会話形式の音声再生機能（AとBを演じ分け）
-  const speakConversation = (text: string, id: string) => {
+  // A/B個別の音声再生（モバイル対応改善）
+  const speakPerson = (text: string, person: 'A' | 'B', id: string) => {
     // 既に再生中の場合は停止
     if (isPlaying) {
       window.speechSynthesis.cancel()
@@ -421,78 +421,50 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
       }
     }
 
-    // テキストをAとBに分割（"A: "と"B: "で分割）
-    const lines = text.split('\n').filter(line => line.trim())
-    const conversations: Array<{ person: 'A' | 'B', text: string }> = []
-
-    lines.forEach(line => {
-      if (line.startsWith('A:')) {
-        conversations.push({ person: 'A', text: line.replace(/^A:\s*/, '') })
-      } else if (line.startsWith('B:')) {
-        conversations.push({ person: 'B', text: line.replace(/^B:\s*/, '') })
-      }
-    })
-
-    if (conversations.length === 0) {
-      // AとBの形式でない場合は通常の再生
-      speak(text, id)
-      return
-    }
-
-    // 利用可能な音声を取得
     const voices = window.speechSynthesis.getVoices()
 
-    // Aさん用の男性の声を探す
-    const maleVoice = voices.find(voice =>
-      voice.lang.startsWith('en') &&
-      (voice.name.includes('Male') || voice.name.includes('David') || voice.name.includes('Mark'))
-    ) || voices.find(voice => voice.lang.startsWith('en') && !voice.name.includes('Female'))
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'en-US'
+    utterance.rate = 0.9
 
-    setIsPlaying(id)
-    let currentIndex = 0
-
-    const speakNext = () => {
-      if (currentIndex >= conversations.length) {
-        setIsPlaying(null)
-        setSpeakingPerson(null)
-        return
-      }
-
-      const { person, text: dialogueText } = conversations[currentIndex]
-      setSpeakingPerson(person)
-
-      const utterance = new SpeechSynthesisUtterance(dialogueText)
-      utterance.lang = 'en-US'
-      utterance.rate = 0.9
-
-      // Aさん: 男性の声、Bさん: デフォルトの声（メインフレーズと同じ）
-      if (person === 'A') {
-        if (maleVoice) utterance.voice = maleVoice
-        utterance.pitch = 0.9 // 男性らしい低めのトーン
-        utterance.volume = 1.0 // 最大音量（低音は小さく聞こえやすいため）
-      } else {
-        // Bさんはデフォルトの音声を使用（voiceを指定しない）
-        utterance.pitch = 1.0 // デフォルトのトーン
-        utterance.volume = 0.7 // 高音は大きく聞こえやすいため、さらに音量を下げる
-      }
-
-      utterance.onend = () => {
-        currentIndex++
-        // 次の発言の前に300msの間を入れる
-        setTimeout(() => {
-          speakNext()
-        }, 300)
-      }
-
-      utterance.onerror = () => {
-        setIsPlaying(null)
-        setSpeakingPerson(null)
-      }
-
-      window.speechSynthesis.speak(utterance)
+    if (person === 'A') {
+      // Aさん: 男性風（低いピッチ）
+      // PC/モバイル両方で明確に違いを出すためピッチを大きく下げる
+      const maleVoice = voices.find(voice =>
+        voice.lang.startsWith('en') &&
+        (voice.name.includes('Male') || voice.name.includes('David') ||
+         voice.name.includes('Mark') || voice.name.includes('Daniel') ||
+         voice.name.includes('James') || voice.name.includes('Google US English Male'))
+      )
+      if (maleVoice) utterance.voice = maleVoice
+      utterance.pitch = 0.7  // より低く（モバイルでも違いがわかるように）
+      utterance.volume = 1.0
+    } else {
+      // Bさん: 女性風（高いピッチ）
+      const femaleVoice = voices.find(voice =>
+        voice.lang.startsWith('en') &&
+        (voice.name.includes('Female') || voice.name.includes('Samantha') ||
+         voice.name.includes('Victoria') || voice.name.includes('Karen') ||
+         voice.name.includes('Google US English Female'))
+      )
+      if (femaleVoice) utterance.voice = femaleVoice
+      utterance.pitch = 1.3  // より高く（モバイルでも違いがわかるように）
+      utterance.volume = 0.85
     }
 
-    speakNext()
+    setIsPlaying(id)
+    setSpeakingPerson(person)
+
+    utterance.onend = () => {
+      setIsPlaying(null)
+      setSpeakingPerson(null)
+    }
+    utterance.onerror = () => {
+      setIsPlaying(null)
+      setSpeakingPerson(null)
+    }
+
+    window.speechSynthesis.speak(utterance)
   }
 
   return (
@@ -597,7 +569,6 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
         <div className="space-y-4">
           {phrase.examples.map((example, exampleIndex) => {
             const lines = example.english.split('\n').filter(line => line.trim())
-            const isPlayingThis = isPlaying === `example-${exampleIndex}`
 
             return (
               <div key={exampleIndex} className="bg-stone-50 rounded-lg p-4 border border-stone-200">
@@ -608,35 +579,52 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
 
                       if (personMatch) {
                         const [, person, text] = personMatch
-                        const isActive = isPlayingThis && speakingPerson === person
+                        const speakId = `example-${exampleIndex}-${person}-${lineIndex}`
+                        const isPlayingThisLine = isPlaying === speakId
+                        const isActive = isPlayingThisLine && speakingPerson === person
                         const words = parseWords(text)
 
                         return (
-                          <div key={lineIndex} className={`transition-all ${isActive ? 'bg-amber-100 px-2 py-1 rounded' : ''}`}>
-                            <span className="font-semibold text-stone-500 mr-2">{person}:</span>
-                            {exampleMode === 'showAnswers' ? (
-                              <span className={`font-medium ${isActive ? 'text-[#eab308] font-bold' : 'text-stone-900'}`}>
-                                {text}
-                              </span>
-                            ) : (
-                              <span className="inline-flex flex-wrap gap-1.5">
-                                {words.map((word, wordIndex) => {
-                                  const wordKey = getWordKey(exampleIndex, lineIndex, wordIndex)
-                                  return (
-                                    <FillInWord
-                                      key={wordKey}
-                                      word={word}
-                                      state={getWordState(wordKey)}
-                                      isActive={activeWordKey === wordKey}
-                                      onTap={() => handleWordTap(wordKey)}
-                                      onType={(char) => handleWordType(wordKey, word, char)}
-                                      onReveal={() => handleWordReveal(wordKey)}
-                                      onDeactivate={handleWordDeactivate}
-                                    />
-                                  )
-                                })}
-                              </span>
-                            )}
+                          <div key={lineIndex} className={`flex items-start gap-2 transition-all ${isActive ? 'bg-amber-100 px-2 py-1 rounded' : ''}`}>
+                            <div className="flex-1">
+                              <span className="font-semibold text-stone-500 mr-2">{person}:</span>
+                              {exampleMode === 'showAnswers' ? (
+                                <span className={`font-medium ${isActive ? 'text-[#eab308] font-bold' : 'text-stone-900'}`}>
+                                  {text}
+                                </span>
+                              ) : (
+                                <span className="inline-flex flex-wrap gap-1.5">
+                                  {words.map((word, wordIndex) => {
+                                    const wordKey = getWordKey(exampleIndex, lineIndex, wordIndex)
+                                    return (
+                                      <FillInWord
+                                        key={wordKey}
+                                        word={word}
+                                        state={getWordState(wordKey)}
+                                        isActive={activeWordKey === wordKey}
+                                        onTap={() => handleWordTap(wordKey)}
+                                        onType={(char) => handleWordType(wordKey, word, char)}
+                                        onReveal={() => handleWordReveal(wordKey)}
+                                        onDeactivate={handleWordDeactivate}
+                                      />
+                                    )
+                                  })}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => speakPerson(text, person as 'A' | 'B', speakId)}
+                              className={`p-1 rounded-full transition-all hover-scale flex-shrink-0 ${
+                                person === 'A'
+                                  ? 'hover:bg-blue-200 bg-blue-100'
+                                  : 'hover:bg-pink-200 bg-pink-100'
+                              }`}
+                              title={`${person}の音声を再生`}
+                            >
+                              <Volume2 className={`w-3.5 h-3.5 ${
+                                person === 'A' ? 'text-blue-600' : 'text-pink-600'
+                              } ${isPlayingThisLine ? 'animate-pulse' : ''}`} />
+                            </button>
                           </div>
                         )
                       }
@@ -670,13 +658,6 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                       )
                     })}
                   </div>
-                  <button
-                    onClick={() => speakConversation(example.english, `example-${exampleIndex}`)}
-                    className="p-1.5 hover:bg-amber-300 bg-amber-400 rounded-full transition-all hover-scale flex-shrink-0"
-                    title="会話を再生"
-                  >
-                    <Volume2 className={`w-4 h-4 text-stone-900 ${isPlayingThis ? 'animate-pulse' : ''}`} />
-                  </button>
                 </div>
                 <p className="text-stone-600 text-sm whitespace-pre-wrap mt-2">{example.japanese}</p>
               </div>
