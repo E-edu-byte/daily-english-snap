@@ -35,27 +35,37 @@ function FillInWord({ word, state, isActive, onTap, onType, onReveal, onDeactiva
   // 完了判定（全文字入力済み or 表示済み）
   const isComplete = state.revealed || state.typedChars.length >= word.length
 
-  // 表示文字列を生成
-  const displayText = () => {
-    if (state.revealed) return word
+  // 表示を生成（カーソル位置を含む）
+  const renderDisplay = () => {
+    if (state.revealed) return <>{word}</>
 
-    let result = ''
+    const typedLength = state.typedChars.length
+    let beforeCursor = ''
+    let afterCursor = ''
+
     for (let i = 0; i < word.length; i++) {
-      if (i < state.typedChars.length) {
-        // 入力済み: 元の文字を表示（大文字小文字を維持）
-        result += word[i]
+      if (i < typedLength) {
+        // 入力済み: 元の文字を表示
+        beforeCursor += word[i]
       } else {
         // 未入力: アンダースコアか記号
         const char = word[i]
         if (/[a-zA-Z]/.test(char)) {
-          result += '_'
+          afterCursor += '_'
         } else {
-          // 句読点などはそのまま表示
-          result += char
+          afterCursor += char
         }
       }
     }
-    return result
+
+    // カーソルは入力済み部分と未入力部分の間に表示
+    return (
+      <>
+        {beforeCursor}
+        {isActive && !isComplete && <span className="animate-pulse text-emerald-500">|</span>}
+        {afterCursor}
+      </>
+    )
   }
 
   // アクティブになったらフォーカス
@@ -140,8 +150,7 @@ function FillInWord({ word, state, isActive, onTap, onType, onReveal, onDeactiva
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      {displayText()}
-      {isActive && !isComplete && <span className="animate-pulse">|</span>}
+      {renderDisplay()}
       {/* 透明な入力フィールド（キーボード表示用） */}
       {isActive && !isComplete && (
         <input
