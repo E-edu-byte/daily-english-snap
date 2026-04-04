@@ -40,6 +40,11 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
   const [showBlankAnswer, setShowBlankAnswer] = useState(false)
   const todayJST = getTodayJST()
 
+  // フレーズが変わったら答えの状態をリセット
+  useEffect(() => {
+    setShowBlankAnswer(false)
+  }, [phrase.id])
+
   // フレーズを空欄付きで表示
   const renderPhraseWithBlank = () => {
     if (!phrase.blankWord) {
