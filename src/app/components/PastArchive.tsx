@@ -284,8 +284,7 @@ export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_
           href={getArchiveIndexLink()}
           className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium transition-colors text-sm md:text-base"
         >
-          <span className="hidden md:inline">過去30日分のアーカイブを見る</span>
-          <span className="md:hidden">過去30日分のアーカイブ</span>
+          過去のアーカイブ
         </Link>
         <Link
           href={getCalendarLink()}

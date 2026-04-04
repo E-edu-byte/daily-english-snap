@@ -1,14 +1,17 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, CheckCircle2, Circle } from 'lucide-react'
+import { ArrowLeft, Calendar, CheckCircle2, Circle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Lora } from 'next/font/google'
 import LevelTabs from '../components/LevelTabs'
-import { Level, DEFAULT_LEVEL, LEVELS, isValidLevel } from '../types'
+import { Level, DEFAULT_LEVEL, isValidLevel } from '../types'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
+
+const ITEMS_PER_PAGE = 10
+const MAX_DAYS = 365 // 最大1年分
 
 // ことわざリスト
 const proverbs = [
@@ -78,13 +81,13 @@ function createBlankPhrase(phrase: string, blankWord: string): string {
   return phrase.replace(blankWord, '???')
 }
 
-// 過去N日間の日付を取得
-function getPastDates(days: number) {
+// 過去の日付を取得（開始位置から指定件数）
+function getPastDates(startIndex: number, count: number) {
   const dates = []
   const today = new Date()
-  for (let i = 1; i <= days; i++) {
+  for (let i = startIndex; i < startIndex + count && i < MAX_DAYS; i++) {
     const date = new Date(today)
-    date.setDate(today.getDate() - i)
+    date.setDate(today.getDate() - (i + 1)) // +1 because we start from yesterday
     dates.push(date)
   }
   return dates
@@ -116,10 +119,18 @@ function normalizeRecord(value: RecordValue): NewRecordFormat {
 
 function ArchiveContent() {
   const searchParams = useSearchParams()
-  const levelParam = searchParams.get('level')
-  const selectedLevel: Level = isValidLevel(levelParam) ? levelParam : DEFAULT_LEVEL
+  const router = useRouter()
 
-  const pastDates = getPastDates(30)  // 30日分表示
+  const levelParam = searchParams.get('level')
+  const pageParam = searchParams.get('page')
+
+  const selectedLevel: Level = isValidLevel(levelParam) ? levelParam : DEFAULT_LEVEL
+  const currentPage = Math.max(1, parseInt(pageParam || '1', 10))
+
+  const totalPages = Math.ceil(MAX_DAYS / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const pastDates = getPastDates(startIndex, ITEMS_PER_PAGE)
+
   const [doneStates, setDoneStates] = useState<Record<string, boolean>>({})
 
   const formatDateForUrl = (date: Date) => {
@@ -152,7 +163,7 @@ function ArchiveContent() {
   useEffect(() => {
     loadDoneStates()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLevel])
+  }, [selectedLevel, currentPage])
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('ja-JP', {
@@ -169,8 +180,19 @@ function ArchiveContent() {
     } else {
       url.searchParams.set('level', newLevel)
     }
+    // ページは維持
     window.history.pushState({}, '', url.toString())
     window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
+  const handlePageChange = (newPage: number) => {
+    const url = new URL(window.location.href)
+    if (newPage === 1) {
+      url.searchParams.delete('page')
+    } else {
+      url.searchParams.set('page', String(newPage))
+    }
+    router.push(url.toString())
   }
 
   const getArchiveLink = (date: Date) => {
@@ -179,6 +201,38 @@ function ArchiveContent() {
       return `/archive/${dateStr}`
     }
     return `/archive/${dateStr}?level=${selectedLevel}`
+  }
+
+  // ページネーションの表示範囲を計算
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = []
+    const maxVisiblePages = 5
+
+    if (totalPages <= maxVisiblePages + 2) {
+      // 全ページ表示
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      // 省略表示
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i)
+        pages.push('...')
+        pages.push(totalPages)
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1)
+        pages.push('...')
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i)
+      } else {
+        pages.push(1)
+        pages.push('...')
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i)
+        pages.push('...')
+        pages.push(totalPages)
+      }
+    }
+
+    return pages
   }
 
   return (
@@ -197,12 +251,9 @@ function ArchiveContent() {
         <div className="inline-flex items-center gap-3 mb-4">
           <Calendar className="w-7 h-7 text-emerald-500" />
           <h1 className={`text-3xl font-bold text-emerald-600 font-serif ${lora.className}`}>
-            過去の格言・クイズ
+            過去のアーカイブ
           </h1>
         </div>
-        <p className="text-stone-600 mb-4">
-          過去30日分のアーカイブ
-        </p>
 
         {/* レベルタブ */}
         <LevelTabs
@@ -269,6 +320,61 @@ function ArchiveContent() {
           )
         })}
       </div>
+
+      {/* ページネーション */}
+      <div className="mt-6 flex justify-center items-center gap-2">
+        {/* 前へ */}
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`p-2 rounded-lg transition-colors ${
+            currentPage === 1
+              ? 'text-stone-300 cursor-not-allowed'
+              : 'text-stone-600 hover:bg-stone-100'
+          }`}
+          aria-label="前のページ"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        {/* ページ番号 */}
+        {getPageNumbers().map((page, index) => (
+          page === '...' ? (
+            <span key={`ellipsis-${index}`} className="px-2 text-stone-400">...</span>
+          ) : (
+            <button
+              key={page}
+              onClick={() => handlePageChange(page as number)}
+              className={`min-w-[36px] h-9 rounded-lg font-medium transition-colors ${
+                currentPage === page
+                  ? 'bg-emerald-500 text-white'
+                  : 'text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              {page}
+            </button>
+          )
+        ))}
+
+        {/* 次へ */}
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={`p-2 rounded-lg transition-colors ${
+            currentPage === totalPages
+              ? 'text-stone-300 cursor-not-allowed'
+              : 'text-stone-600 hover:bg-stone-100'
+          }`}
+          aria-label="次のページ"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* ページ情報 */}
+      <p className="text-center text-sm text-stone-500 mt-3">
+        {startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, MAX_DAYS)} 件目
+      </p>
     </div>
   )
 }
