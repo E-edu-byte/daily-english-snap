@@ -8,6 +8,7 @@ import PhraseCard from './PhraseCard'
 import DailyProverb from './DailyProverb'
 import PastArchive from './PastArchive'
 import LevelTabs from './LevelTabs'
+import AddToHomeScreen from './AddToHomeScreen'
 import { Level, DEFAULT_LEVEL, isValidLevel } from '../types'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
@@ -53,6 +54,9 @@ function HomeContentInner({ phrases, proverb, pastPhrases }: HomeContentProps) {
 
   return (
     <div className="max-w-6xl mx-auto">
+      {/* ホーム画面に追加の案内 */}
+      <AddToHomeScreen />
+
       {/* ヒーローセクション */}
       <section className="text-center mb-2 animate-fade-in-up">
         {/* 今日のことわざ */}

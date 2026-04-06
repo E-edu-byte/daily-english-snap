@@ -46,6 +46,15 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
+        {/* PWA対応 */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#ffed4e" />
+        {/* iOS対応 */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="英語Snap" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+
         {/* Google Analytics */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
@@ -67,6 +76,21 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
+
+        {/* Service Worker登録 */}
+        <Script id="sw-register" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.register('/sw.js')
+                .then(function(registration) {
+                  console.log('ServiceWorker registered');
+                })
+                .catch(function(error) {
+                  console.log('ServiceWorker registration failed:', error);
+                });
+            }
+          `}
+        </Script>
       </head>
       <body className={inter.className}>
         <div className="min-h-screen flex flex-col bg-[#fafaf9]">
