@@ -4,7 +4,7 @@ import { MessageSquare, BookText, Volume2, PenLine, Eye } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import DoneButton from './DoneButton'
 import Link from 'next/link'
-import { Level, DEFAULT_LEVEL } from '../types'
+import { Level, DEFAULT_LEVEL, LEVEL_CONFIG } from '../types'
 
 interface Example {
   english: string
@@ -653,7 +653,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
             <div className="flex items-center gap-2">
               <DoneButton phraseId={phrase.id} date={date} level={level} />
               <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`1日１回英語フレーズを学ぼう\n格言もあるよ！\n\n`)}&url=${encodeURIComponent(`https://english.news-navi.jp?d=${todayJST}`)}&hashtags=DailyEnglishSnap,英語学習`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`1日１回英語フレーズを学ぼう\n【${LEVEL_CONFIG[level].label}】レベルに挑戦中！\n格言もあるよ！\n\n`)}&url=${encodeURIComponent(`https://english.news-navi.jp${level === DEFAULT_LEVEL ? '' : `?level=${level}`}`)}&hashtags=DailyEnglishSnap,英語学習`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-1.5 px-4 py-2 bg-black hover:bg-gray-800 text-white font-medium rounded-lg transition-colors"

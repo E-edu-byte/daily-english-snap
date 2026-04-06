@@ -4,19 +4,49 @@ import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'edge'
 
-// モックフレーズ（Supabase接続できない場合のフォールバック）
-const mockPhrase = {
-  phrase: "Sounds good!",
-  blankWord: "good",
-  meaning: "いいね！それでいこう",
+type Level = 'high_school' | 'business' | 'advanced'
+
+const LEVEL_LABELS: Record<Level, string> = {
+  high_school: '高校英語',
+  business: 'ビジネス',
+  advanced: '上級',
 }
 
-async function getLatestPhrase() {
+const LEVEL_COLORS: Record<Level, string> = {
+  high_school: '#10b981', // emerald
+  business: '#3b82f6',    // blue
+  advanced: '#8b5cf6',    // purple
+}
+
+// モックフレーズ（Supabase接続できない場合のフォールバック）
+const mockPhrases: Record<Level, { phrase: string; blankWord: string; meaning: string }> = {
+  high_school: {
+    phrase: "Sounds good!",
+    blankWord: "good",
+    meaning: "いいね！それでいこう",
+  },
+  business: {
+    phrase: "I'll circle back on this.",
+    blankWord: "circle",
+    meaning: "この件は後で改めて連絡します",
+  },
+  advanced: {
+    phrase: "It's a double-edged sword.",
+    blankWord: "sword",
+    meaning: "諸刃の剣だね",
+  },
+}
+
+function isValidLevel(level: string | null): level is Level {
+  return level === 'high_school' || level === 'business' || level === 'advanced'
+}
+
+async function getLatestPhrase(level: Level) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseKey) {
-    return mockPhrase
+    return mockPhrases[level]
   }
 
   try {
@@ -24,12 +54,13 @@ async function getLatestPhrase() {
     const { data, error } = await supabase
       .from('phrases')
       .select('phrase, blank_word, meaning')
+      .eq('level', level)
       .order('generated_at', { ascending: false })
       .limit(1)
       .single()
 
     if (error || !data) {
-      return mockPhrase
+      return mockPhrases[level]
     }
 
     return {
@@ -38,7 +69,7 @@ async function getLatestPhrase() {
       meaning: data.meaning,
     }
   } catch {
-    return mockPhrase
+    return mockPhrases[level]
   }
 }
 
@@ -50,12 +81,16 @@ function createBlankPhrase(phrase: string, blankWord: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  // URLパラメータから日付を取得（キャッシュバスティング用）
+  // URLパラメータから日付とレベルを取得
   const { searchParams } = new URL(request.url)
   const date = searchParams.get('d')
+  const levelParam = searchParams.get('level')
+  const level: Level = isValidLevel(levelParam) ? levelParam : 'high_school'
 
-  const phraseData = await getLatestPhrase()
+  const phraseData = await getLatestPhrase(level)
   const blankPhrase = createBlankPhrase(phraseData.phrase, phraseData.blankWord || '')
+  const levelLabel = LEVEL_LABELS[level]
+  const levelColor = LEVEL_COLORS[level]
 
   return new ImageResponse(
     (
@@ -95,17 +130,41 @@ export async function GET(request: NextRequest) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#10b981',
-            color: 'white',
-            padding: '12px 32px',
-            borderRadius: '50px',
-            fontSize: '28px',
-            fontWeight: 'bold',
+            gap: '16px',
             marginBottom: '40px',
           }}
         >
-          {"Today's Quiz"}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: levelColor,
+              color: 'white',
+              padding: '12px 32px',
+              borderRadius: '50px',
+              fontSize: '28px',
+              fontWeight: 'bold',
+            }}
+          >
+            {"Today's Quiz"}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'white',
+              color: levelColor,
+              padding: '8px 20px',
+              borderRadius: '50px',
+              fontSize: '22px',
+              fontWeight: 'bold',
+              border: `3px solid ${levelColor}`,
+            }}
+          >
+            {levelLabel}
+          </div>
         </div>
 
         <div
