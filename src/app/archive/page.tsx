@@ -188,15 +188,16 @@ function ArchiveContent() {
   }
 
   const handleLevelChange = (newLevel: Level) => {
-    const url = new URL(window.location.href)
-    if (newLevel === DEFAULT_LEVEL) {
-      url.searchParams.delete('level')
-    } else {
-      url.searchParams.set('level', newLevel)
+    // ページは維持しつつレベルを変更
+    const params = new URLSearchParams()
+    if (newLevel !== DEFAULT_LEVEL) {
+      params.set('level', newLevel)
     }
-    // ページは維持
-    window.history.pushState({}, '', url.toString())
-    window.dispatchEvent(new PopStateEvent('popstate'))
+    if (currentPage > 1) {
+      params.set('page', String(currentPage))
+    }
+    const queryString = params.toString()
+    router.replace(queryString ? `/archive?${queryString}` : '/archive')
   }
 
   const handlePageChange = (newPage: number) => {

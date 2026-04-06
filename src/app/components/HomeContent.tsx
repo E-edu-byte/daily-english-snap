@@ -1,7 +1,7 @@
 'use client'
 
-import { Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { Suspense, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Lightbulb } from 'lucide-react'
 import { Lora } from 'next/font/google'
 import PhraseCard from './PhraseCard'
@@ -36,22 +36,20 @@ interface HomeContentProps {
 
 function HomeContentInner({ phrases, proverb, pastPhrases }: HomeContentProps) {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const levelParam = searchParams.get('level')
   const selectedLevel: Level = isValidLevel(levelParam) ? levelParam : DEFAULT_LEVEL
 
   const currentPhrase = phrases[selectedLevel]
   const currentPastPhrases = pastPhrases[selectedLevel] || {}
 
-  const handleLevelChange = (newLevel: Level) => {
-    const url = new URL(window.location.href)
+  const handleLevelChange = useCallback((newLevel: Level) => {
     if (newLevel === DEFAULT_LEVEL) {
-      url.searchParams.delete('level')
+      router.replace('/')
     } else {
-      url.searchParams.set('level', newLevel)
+      router.replace(`/?level=${newLevel}`)
     }
-    window.history.pushState({}, '', url.toString())
-    window.dispatchEvent(new PopStateEvent('popstate'))
-  }
+  }, [router])
 
   return (
     <div className="max-w-6xl mx-auto">
