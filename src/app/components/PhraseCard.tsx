@@ -570,8 +570,8 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
   }
 
-  // A/B個別の音声再生（モバイル対応改善）
-  const speakPerson = (text: string, person: 'A' | 'B', id: string) => {
+  // A/B個別の音声再生（モバイル対応改善、スピード対応）
+  const speakPerson = (text: string, person: 'A' | 'B', id: string, slow: boolean = false) => {
     // 既に再生中の場合は停止
     if (isPlaying) {
       window.speechSynthesis.cancel()
@@ -587,7 +587,8 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
 
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = 'en-US'
-    utterance.rate = 0.9
+    // 通常: 0.9倍速、スロー: 0.675倍速（0.9 × 0.75）
+    utterance.rate = slow ? 0.675 : 0.9
 
     if (person === 'A') {
       // Aさん: 男性の声
@@ -750,7 +751,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                             </div>
                           )}
                           {/* A:/B: ラベルと音声ボタン */}
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-1.5 mb-1">
                             <span className="font-semibold text-stone-500">{person}:</span>
                             <button
                               onClick={() => speakPerson(text, person as 'A' | 'B', speakId)}
@@ -758,6 +759,13 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                               title={`${person}の音声を再生`}
                             >
                               <Volume2 className={`w-3.5 h-3.5 text-stone-900 ${isPlayingThisLine ? 'animate-pulse' : ''}`} />
+                            </button>
+                            <button
+                              onClick={() => speakPerson(text, person as 'A' | 'B', `${speakId}-slow`, true)}
+                              className="px-1.5 py-0.5 hover:bg-emerald-200 bg-emerald-100 rounded text-[10px] font-bold text-emerald-700 transition-all hover-scale flex-shrink-0"
+                              title={`${person}の音声をゆっくり再生`}
+                            >
+                              🐢
                             </button>
                           </div>
                           {/* 文章（一段下げ） */}
