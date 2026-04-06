@@ -125,6 +125,7 @@ interface PastArchiveProps {
 export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_LEVEL, onLevelChange }: PastArchiveProps) {
   const pastDates = getPastDates(7)  // 1週間分
   const [doneStates, setDoneStates] = useState<Record<string, boolean>>({})
+  const [fillInStates, setFillInStates] = useState<Record<string, boolean>>({})
 
   // Done状態を読み込む関数
   const loadDoneStates = () => {
@@ -143,18 +144,30 @@ export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_
     setDoneStates(states)
   }
 
+  // 穴埋め完了状態を読み込む関数
+  const loadFillInStates = () => {
+    const records = JSON.parse(localStorage.getItem('fillInCompleteRecords') || '{}')
+    setFillInStates(records)
+  }
+
   useEffect(() => {
     // 初回読み込み
     loadDoneStates()
+    loadFillInStates()
 
     // DoneButtonからのイベントを監視して自動更新
     const handleUpdate = () => {
       loadDoneStates()
     }
+    const handleFillInUpdate = () => {
+      loadFillInStates()
+    }
 
     window.addEventListener('learningRecordsUpdated', handleUpdate)
+    window.addEventListener('fillInRecordsUpdated', handleFillInUpdate)
     return () => {
       window.removeEventListener('learningRecordsUpdated', handleUpdate)
+      window.removeEventListener('fillInRecordsUpdated', handleFillInUpdate)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLevel])
@@ -242,6 +255,7 @@ export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_
           const proverb = getProverbForDate(date)
           const phraseData = getPhraseForDate(date)
           const blankPhrase = createBlankPhrase(phraseData.phrase, phraseData.blankWord)
+          const isFillInDone = fillInStates[dateKey] === true
 
           return (
             <Link
@@ -270,7 +284,7 @@ export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_
                   <p className="text-xs text-stone-500 truncate">{blankPhrase}</p>
                 </div>
 
-                {/* クイズ + Doneマーク */}
+                {/* クイズ + Doneマーク + 穴埋め完了 */}
                 <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                   <span className="text-xs md:text-sm text-emerald-600 font-medium">
                     <span className="hidden md:inline">クイズ：</span>
@@ -280,6 +294,9 @@ export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_
                     <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
                   ) : (
                     <Circle className="w-4 h-4 md:w-5 md:h-5 text-stone-300" />
+                  )}
+                  {isFillInDone && (
+                    <span className="text-sm" title="穴埋め全完了">✨</span>
                   )}
                 </div>
 

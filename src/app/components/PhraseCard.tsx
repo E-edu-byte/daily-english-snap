@@ -437,6 +437,53 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
     return true
   }
 
+  // 全例文（全てのA/B行）が完了したかチェック
+  const isAllFillInComplete = useCallback((): boolean => {
+    for (let exampleIndex = 0; exampleIndex < phrase.examples.length; exampleIndex++) {
+      const example = phrase.examples[exampleIndex]
+      const lines = example.english.split('\n').filter(line => line.trim())
+
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const line = lines[lineIndex]
+        const personMatch = line.match(/^([AB]):\s*(.+)/)
+        const text = personMatch ? personMatch[2] : line
+        const words = parseWords(text)
+
+        for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+          const word = words[wordIndex]
+          const wordKey = getWordKey(exampleIndex, lineIndex, wordIndex)
+          const state = wordStates[wordKey] || { typedChars: '', revealed: false }
+          const isComplete = state.revealed || state.typedChars.length >= word.length
+          if (!isComplete) return false
+        }
+      }
+    }
+    return true
+  }, [phrase.examples, wordStates, parseWords, getWordKey])
+
+  // 穴埋め全完了状態をlocalStorageに保存
+  useEffect(() => {
+    if (!isInitialized) return
+    if (typeof window === 'undefined') return
+
+    const targetDate = date || getTodayJST()
+    const allComplete = isAllFillInComplete()
+
+    // 既存の完了記録を取得
+    const fillInRecords = JSON.parse(localStorage.getItem('fillInCompleteRecords') || '{}')
+
+    if (allComplete) {
+      fillInRecords[targetDate] = true
+    } else {
+      delete fillInRecords[targetDate]
+    }
+
+    localStorage.setItem('fillInCompleteRecords', JSON.stringify(fillInRecords))
+
+    // カスタムイベントを発火して他のコンポーネントに通知
+    window.dispatchEvent(new Event('fillInRecordsUpdated'))
+  }, [wordStates, isInitialized, date, isAllFillInComplete])
+
   // フレーズを空欄付きで表示
   const renderPhraseWithBlank = () => {
     if (!phrase.blankWord) {

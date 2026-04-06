@@ -37,6 +37,7 @@ interface LearningCalendarProps {
 export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: LearningCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [learningRecords, setLearningRecords] = useState<Record<string, NewRecordFormat>>({})
+  const [fillInRecords, setFillInRecords] = useState<Record<string, boolean>>({})
   const [selectedLevel, setSelectedLevel] = useState<Level>(initialLevel)
 
   // LocalStorageから学習記録を読み込み
@@ -51,13 +52,26 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
     setLearningRecords(normalizedRecords)
   }
 
+  // LocalStorageから穴埋め完了記録を読み込み
+  const loadFillInRecords = () => {
+    if (typeof window === 'undefined') return
+    const records = JSON.parse(localStorage.getItem('fillInCompleteRecords') || '{}')
+    setFillInRecords(records)
+  }
+
   useEffect(() => {
     loadRecords()
+    loadFillInRecords()
 
     // カスタムイベントをリッスンして更新
     const handleUpdate = () => loadRecords()
+    const handleFillInUpdate = () => loadFillInRecords()
     window.addEventListener('learningRecordsUpdated', handleUpdate)
-    return () => window.removeEventListener('learningRecordsUpdated', handleUpdate)
+    window.addEventListener('fillInRecordsUpdated', handleFillInUpdate)
+    return () => {
+      window.removeEventListener('learningRecordsUpdated', handleUpdate)
+      window.removeEventListener('fillInRecordsUpdated', handleFillInUpdate)
+    }
   }, [])
 
   const year = currentDate.getFullYear()
@@ -89,6 +103,13 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
     const record = learningRecords[dateStr]
     if (!record) return false
     return (record[selectedLevel] || []).length > 0
+  }
+
+  // 穴埋め全完了かチェック
+  const isFillInComplete = (day: number | null) => {
+    if (!day) return false
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    return fillInRecords[dateStr] === true
   }
 
   // 今日かどうかチェック
@@ -196,17 +217,18 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
         {/* 日付セル */}
         {calendarDays.map((day, index) => {
           const completed = isDayCompleted(day)
+          const fillInDone = isFillInComplete(day)
           const today = isToday(day)
           const future = isFutureDate(day)
           const beforeService = isBeforeServiceStart(day)
           const isDisabled = future || beforeService
 
           const cellContent = day && (
-            <div className="flex flex-col items-center justify-center gap-1">
+            <div className="flex flex-col items-center justify-center gap-0.5">
               <span>{day}</span>
-              {completed && !beforeService && (
-                <span className="text-lg leading-none" title="学習完了">
-                  📖
+              {(completed || fillInDone) && !beforeService && (
+                <span className="text-base leading-none" title={fillInDone ? "学習完了 + 穴埋め全完了" : "学習完了"}>
+                  {completed ? '📖' : ''}{fillInDone ? '✨' : ''}
                 </span>
               )}
             </div>
@@ -247,22 +269,24 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
       </div>
 
       {/* 凡例 */}
-      <div className="mt-6 pt-6 border-t border-stone-200 flex flex-wrap items-center gap-4 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-[#ffed4e] rounded-lg ring-2 ring-[#eab308]"></div>
+      <div className="mt-6 pt-6 border-t border-stone-200 flex flex-wrap items-center gap-3 text-sm">
+        <div className="flex items-center gap-1.5">
+          <div className="w-5 h-5 bg-[#ffed4e] rounded-lg ring-2 ring-[#eab308]"></div>
           <span className="text-stone-700">Today</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg flex items-center justify-center text-base">
-            📖
-          </div>
-          <span className="text-stone-700">Completed</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-base">📖</span>
+          <span className="text-stone-700">Done</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-base">✨</span>
+          <span className="text-stone-700">穴埋め完了</span>
         </div>
         <div className="ml-auto text-stone-600">
           <span className="font-bold text-[#eab308]">
             {getCompletedDaysCount()}
           </span>
-          {' '}days this month
+          {' '}days
         </div>
       </div>
     </div>
