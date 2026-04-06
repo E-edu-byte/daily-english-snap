@@ -59,11 +59,9 @@ function FillInWord({ word, state, isActive, onTap, onType, onReveal, onReset, o
       }
     }
 
-    // カーソルは入力済み部分と未入力部分の間に表示
     return (
       <>
         {beforeCursor}
-        {isActive && !isComplete && <span className="animate-pulse text-emerald-500">|</span>}
         {afterCursor}
       </>
     )
