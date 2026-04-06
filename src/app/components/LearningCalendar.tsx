@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
 import Link from 'next/link'
 import LevelTabs from './LevelTabs'
@@ -35,10 +36,22 @@ interface LearningCalendarProps {
 }
 
 export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: LearningCalendarProps) {
+  const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [learningRecords, setLearningRecords] = useState<Record<string, NewRecordFormat>>({})
   const [fillInRecords, setFillInRecords] = useState<Record<string, boolean>>({})
   const [selectedLevel, setSelectedLevel] = useState<Level>(initialLevel)
+
+  // レベル変更時にURLも更新
+  const handleLevelChange = useCallback((newLevel: Level) => {
+    setSelectedLevel(newLevel)
+    // URLを更新（履歴に残さずに置き換え）
+    if (newLevel === DEFAULT_LEVEL) {
+      router.replace('/calendar')
+    } else {
+      router.replace(`/calendar?level=${newLevel}`)
+    }
+  }, [router])
 
   // LocalStorageから学習記録を読み込み
   const loadRecords = () => {
@@ -198,7 +211,7 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
       {/* レベルタブ */}
       <LevelTabs
         selectedLevel={selectedLevel}
-        onLevelChange={setSelectedLevel}
+        onLevelChange={handleLevelChange}
         className="mb-6"
       />
 
