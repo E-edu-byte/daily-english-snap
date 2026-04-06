@@ -751,7 +751,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                             </div>
                           )}
                           {/* A:/B: ラベルと音声ボタン */}
-                          <div className="flex items-center gap-1.5 mb-1">
+                          <div className="flex items-center gap-2 mb-1">
                             <span className="font-semibold text-stone-500">{person}:</span>
                             <button
                               onClick={() => speakPerson(text, person as 'A' | 'B', speakId)}
@@ -762,10 +762,10 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                             </button>
                             <button
                               onClick={() => speakPerson(text, person as 'A' | 'B', `${speakId}-slow`, true)}
-                              className="px-1.5 py-0.5 hover:bg-emerald-200 bg-emerald-100 rounded text-[10px] font-bold text-emerald-700 transition-all hover-scale flex-shrink-0"
+                              className="ml-1 px-1.5 py-0.5 hover:bg-emerald-200 bg-emerald-100 rounded text-[10px] font-bold text-emerald-700 transition-all hover-scale flex-shrink-0"
                               title={`${person}の音声をゆっくり再生`}
                             >
-                              🐢
+                              ×0.75🐢
                             </button>
                           </div>
                           {/* 文章（一段下げ） */}
