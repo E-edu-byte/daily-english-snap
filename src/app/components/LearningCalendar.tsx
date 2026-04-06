@@ -224,12 +224,13 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
           const isDisabled = future || beforeService
 
           const cellContent = day && (
-            <div className="flex flex-col items-center justify-center gap-0.5">
+            <div className="flex flex-col items-center justify-center gap-0">
               <span>{day}</span>
               {(completed || fillInDone) && !beforeService && (
-                <span className="text-base leading-none" title={fillInDone ? "学習完了 + 穴埋め全完了" : "学習完了"}>
-                  {completed ? '📖' : ''}{fillInDone ? '✨' : ''}
-                </span>
+                <div className="flex flex-col items-center leading-none text-sm">
+                  {completed && <span title="学習完了">📖</span>}
+                  {fillInDone && <span title="穴埋め全完了">💮</span>}
+                </div>
               )}
             </div>
           )
@@ -279,7 +280,7 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
           <span className="text-stone-700">Done</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-base">✨</span>
+          <span className="text-base">💮</span>
           <span className="text-stone-700">穴埋め完了</span>
         </div>
         <div className="ml-auto text-stone-600">

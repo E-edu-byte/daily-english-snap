@@ -296,7 +296,7 @@ export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_
                     <Circle className="w-4 h-4 md:w-5 md:h-5 text-stone-300" />
                   )}
                   {isFillInDone && (
-                    <span className="text-sm" title="穴埋め全完了">✨</span>
+                    <span className="text-sm" title="穴埋め全完了">💮</span>
                   )}
                 </div>
 
