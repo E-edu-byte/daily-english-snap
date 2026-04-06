@@ -762,7 +762,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                             </button>
                             <button
                               onClick={() => speakPerson(text, person as 'A' | 'B', `${speakId}-slow`, true)}
-                              className="ml-1 px-1.5 py-0.5 hover:bg-emerald-200 bg-emerald-100 rounded text-[10px] font-bold text-emerald-700 transition-all hover-scale flex-shrink-0"
+                              className="ml-4 px-1.5 py-0.5 hover:bg-emerald-200 bg-emerald-100 rounded text-[10px] font-bold text-emerald-700 transition-all hover-scale flex-shrink-0"
                               title={`${person}の音声をゆっくり再生`}
                             >
                               ×0.75🐢
