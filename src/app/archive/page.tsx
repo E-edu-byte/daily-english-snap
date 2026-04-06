@@ -249,11 +249,19 @@ function ArchiveContent() {
     return pages
   }
 
+  // トップページへのリンク（レベル維持）
+  const getHomeLink = () => {
+    if (selectedLevel === DEFAULT_LEVEL) {
+      return '/'
+    }
+    return `/?level=${selectedLevel}`
+  }
+
   return (
     <div className="max-w-6xl mx-auto">
       {/* 戻るボタン */}
       <Link
-        href="/"
+        href={getHomeLink()}
         className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 mb-6 transition-colors"
       >
         <ArrowLeft className="w-5 h-5" />
