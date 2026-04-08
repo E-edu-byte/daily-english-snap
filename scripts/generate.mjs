@@ -219,9 +219,16 @@ function buildCombinedPrompt(existingPhrases, existingProverbs) {
 }
 
 /**
- * Gemini APIで3レベルのフレーズと格言を同時生成（1回のAPI呼び出し）
+ * 指定ミリ秒待機
  */
-async function generateContent(existingPhrases = [], existingProverbs = []) {
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Gemini APIで3レベルのフレーズと格言を同時生成（リトライ機能付き）
+ */
+async function generateContent(existingPhrases = [], existingProverbs = [], maxRetries = 5) {
   console.log('🤖 Generating 3-level phrases & proverb with Gemini API (1 call)...');
 
   if (existingPhrases.length > 0) {
@@ -231,11 +238,14 @@ async function generateContent(existingPhrases = [], existingProverbs = []) {
     console.log(`📚 Avoiding ${existingProverbs.length} existing proverbs...`);
   }
 
-  try {
-    const prompt = buildCombinedPrompt(existingPhrases, existingProverbs);
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
+  const prompt = buildCombinedPrompt(existingPhrases, existingProverbs);
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔄 Attempt ${attempt}/${maxRetries}...`);
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const text = response.text();
 
     // JSONパース（マークダウンコードブロックを除去）
     const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -281,17 +291,31 @@ async function generateContent(existingPhrases = [], existingProverbs = []) {
       throw new Error('Generated data is missing required proverb fields');
     }
 
-    console.log('✅ Content generated successfully');
-    for (const level of LEVELS) {
-      console.log(`📝 [${level}] ${data.phrases[level].phrase}`);
-    }
-    console.log(`📝 Proverb: ${data.proverb.english}`);
+      console.log('✅ Content generated successfully');
+      for (const level of LEVELS) {
+        console.log(`📝 [${level}] ${data.phrases[level].phrase}`);
+      }
+      console.log(`📝 Proverb: ${data.proverb.english}`);
 
-    return data;
-  } catch (error) {
-    console.error('❌ Error generating content:', error.message);
-    throw error;
+      return data;
+    } catch (error) {
+      const isRetryable = error.status === 503 || error.status === 429 ||
+                          error.message?.includes('503') ||
+                          error.message?.includes('high demand') ||
+                          error.message?.includes('rate limit');
+
+      if (isRetryable && attempt < maxRetries) {
+        const waitTime = Math.pow(2, attempt) * 10; // 20秒, 40秒, 80秒, 160秒...
+        console.warn(`⚠️  API temporarily unavailable (${error.status || 'error'}). Retrying in ${waitTime} seconds...`);
+        await sleep(waitTime * 1000);
+      } else {
+        console.error('❌ Error generating content:', error.message);
+        throw error;
+      }
+    }
   }
+
+  throw new Error('Max retries exceeded');
 }
 
 /**
