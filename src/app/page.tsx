@@ -3,17 +3,37 @@ import type { Metadata } from 'next'
 import HomeContent from './components/HomeContent'
 import { Level, LEVELS, DEFAULT_LEVEL } from './types'
 
-// 動的メタデータ生成（OGP画像のURL毎日更新）
-export async function generateMetadata(): Promise<Metadata> {
-  // 今日の日付（JST）をキャッシュバスティング用に使用
-  const now = new Date()
-  const jstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000)
-  const dateStr = jstDate.toISOString().split('T')[0]
+// 動的メタデータ生成（OGP画像のURL - 日付とレベル対応）
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ level?: string; d?: string }>
+}): Promise<Metadata> {
+  const params = await searchParams
+
+  // 日付: パラメータがあればそれを使用、なければ今日
+  let dateStr = params.d
+  if (!dateStr) {
+    const now = new Date()
+    const jstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+    dateStr = jstDate.toISOString().split('T')[0]
+  }
+
+  // レベル: パラメータがあればそれを使用
+  const level = params.level || DEFAULT_LEVEL
+
+  // OG画像URLにレベルと日付を含める
+  const ogParams = new URLSearchParams()
+  ogParams.set('d', dateStr)
+  if (level !== DEFAULT_LEVEL) {
+    ogParams.set('level', level)
+  }
+  const ogUrl = `https://english.news-navi.jp/api/og?${ogParams.toString()}`
 
   return {
     openGraph: {
       images: [{
-        url: `https://english.news-navi.jp/api/og?d=${dateStr}`,
+        url: ogUrl,
         width: 1200,
         height: 630,
         alt: "Today's Quiz - Daily English Snap",
@@ -21,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      images: [`https://english.news-navi.jp/api/og?d=${dateStr}`],
+      images: [ogUrl],
     },
   }
 }

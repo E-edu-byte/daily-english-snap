@@ -653,7 +653,31 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
             <div className="flex items-center gap-2">
               <DoneButton phraseId={phrase.id} date={date} level={level} />
               <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`1日１回英語フレーズを学ぼう\n【${LEVEL_CONFIG[level].label}】レベルに挑戦中！\n格言もあるよ！\n\n`)}&url=${encodeURIComponent(`https://english.news-navi.jp${level === DEFAULT_LEVEL ? '' : `?level=${level}`}`)}&hashtags=DailyEnglishSnap,英語学習`}
+                href={(() => {
+                  // シェアするページURL（日付とレベルを含む）
+                  const targetDate = date || todayJST
+                  const isArchive = !!date
+                  let shareUrl = 'https://english.news-navi.jp'
+
+                  if (isArchive) {
+                    // アーカイブページ
+                    shareUrl += `/archive/${targetDate}`
+                    if (level !== DEFAULT_LEVEL) {
+                      shareUrl += `?level=${level}`
+                    }
+                  } else {
+                    // トップページ（日付とレベルをパラメータで渡す）
+                    const params = new URLSearchParams()
+                    params.set('d', targetDate)
+                    if (level !== DEFAULT_LEVEL) {
+                      params.set('level', level)
+                    }
+                    shareUrl += `?${params.toString()}`
+                  }
+
+                  const text = `1日１回英語フレーズを学ぼう\n【${LEVEL_CONFIG[level].label}】レベルに挑戦中！\n格言もあるよ！\n\n`
+                  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}&hashtags=DailyEnglishSnap,英語学習`
+                })()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-1.5 px-4 py-2 bg-black hover:bg-gray-800 text-white font-medium rounded-lg transition-colors"

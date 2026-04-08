@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import PhraseCard from '../../components/PhraseCard'
@@ -9,6 +10,55 @@ import { Level, LEVELS, DEFAULT_LEVEL, isValidLevel } from '../../types'
 import ArchiveDateContent from './ArchiveDateContent'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
+
+// 動的メタデータ生成（アーカイブページ用 - 日付とレベル対応）
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ date: string }>
+  searchParams: Promise<{ level?: string }>
+}): Promise<Metadata> {
+  const { date: dateStr } = await params
+  const { level: levelParam } = await searchParams
+
+  // レベル: パラメータがあればそれを使用
+  const level = isValidLevel(levelParam) ? levelParam : DEFAULT_LEVEL
+
+  // OG画像URLに日付とレベルを含める
+  const ogParams = new URLSearchParams()
+  ogParams.set('d', dateStr)
+  if (level !== DEFAULT_LEVEL) {
+    ogParams.set('level', level)
+  }
+  const ogUrl = `https://english.news-navi.jp/api/og?${ogParams.toString()}`
+
+  // 日付をフォーマット
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  const formattedDate = date.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+
+  return {
+    title: `${formattedDate}のクイズ - Daily English Snap`,
+    description: `${formattedDate}の英語フレーズクイズ。穴埋めで楽しく学習！`,
+    openGraph: {
+      images: [{
+        url: ogUrl,
+        width: 1200,
+        height: 630,
+        alt: `${formattedDate} - Daily English Snap`,
+      }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: [ogUrl],
+    },
+  }
+}
 
 // Supabase クライアント
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''

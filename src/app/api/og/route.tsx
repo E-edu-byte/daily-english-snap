@@ -41,7 +41,7 @@ function isValidLevel(level: string | null): level is Level {
   return level === 'high_school' || level === 'business' || level === 'advanced'
 }
 
-async function getLatestPhrase(level: Level) {
+async function getPhrase(level: Level, date?: string) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -51,10 +51,22 @@ async function getLatestPhrase(level: Level) {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseKey)
-    const { data, error } = await supabase
+
+    let query = supabase
       .from('phrases')
-      .select('phrase, blank_word, meaning')
+      .select('phrase, blank_word, meaning, generated_at')
       .eq('level', level)
+
+    if (date) {
+      // 指定日付のフレーズを取得
+      const startOfDay = `${date}T00:00:00`
+      const endOfDay = `${date}T23:59:59`
+      query = query
+        .gte('generated_at', startOfDay)
+        .lte('generated_at', endOfDay)
+    }
+
+    const { data, error } = await query
       .order('generated_at', { ascending: false })
       .limit(1)
       .single()
@@ -87,7 +99,8 @@ export async function GET(request: NextRequest) {
   const levelParam = searchParams.get('level')
   const level: Level = isValidLevel(levelParam) ? levelParam : 'high_school'
 
-  const phraseData = await getLatestPhrase(level)
+  // 日付が指定されていればその日のフレーズ、なければ最新
+  const phraseData = await getPhrase(level, date || undefined)
   const blankPhrase = createBlankPhrase(phraseData.phrase, phraseData.blankWord || '')
   const levelLabel = LEVEL_LABELS[level]
   const levelColor = LEVEL_COLORS[level]
