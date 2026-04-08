@@ -675,8 +675,8 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                     shareUrl += `?${params.toString()}`
                   }
 
-                  const text = `1日１回英語フレーズを学ぼう\n【${LEVEL_CONFIG[level].label}】レベルに挑戦中！\n格言もあるよ！\n\n`
-                  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}&hashtags=DailyEnglishSnap,英語学習`
+                  const text = `１日１回英語フレーズを学ぼう\n【${LEVEL_CONFIG[level].label}】レベルに挑戦！\n格言もあるよ！\n\n`
+                  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}&hashtags=DailyEnglishSnap,英語学習,毎日,朝活,コツコツ`
                 })()}
                 target="_blank"
                 rel="noopener noreferrer"
