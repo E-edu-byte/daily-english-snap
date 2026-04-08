@@ -13,7 +13,7 @@ const quicksand = Quicksand({ subsets: ['latin'], weight: ['400', '500', '600', 
 
 export const metadata: Metadata = {
   title: 'Daily English Snap - 毎日届く実用英語フレーズ',
-  description: '日常で即レスできる英語フレーズを、毎日配信。穴埋めクイズで楽しく学習。',
+  description: '穴埋めクイズで英語フレーズを楽しく学習！毎日更新される実用フレーズで英会話力アップ。',
   keywords: ['英語学習', '英会話', 'フレーズ', '例文', 'クイズ', 'Daily English'],
   verification: {
     google: '_0bILKnQoufY0oJ-FQRkW3KdJDtCOXls3NW5LWgjOvU',
