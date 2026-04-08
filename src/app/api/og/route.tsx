@@ -58,9 +58,9 @@ async function getPhrase(level: Level, date?: string) {
       .eq('level', level)
 
     if (date) {
-      // 指定日付のフレーズを取得
-      const startOfDay = `${date}T00:00:00`
-      const endOfDay = `${date}T23:59:59`
+      // 指定日付のフレーズを取得（JST基準）
+      const startOfDay = `${date}T00:00:00+09:00`
+      const endOfDay = `${date}T23:59:59+09:00`
       query = query
         .gte('generated_at', startOfDay)
         .lte('generated_at', endOfDay)
