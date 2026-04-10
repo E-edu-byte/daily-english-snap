@@ -12,16 +12,16 @@ const inter = Inter({ subsets: ['latin'] })
 const quicksand = Quicksand({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
 
 export const metadata: Metadata = {
-  title: 'Daily English Snap - 毎日届く実用英語フレーズ',
-  description: '穴埋めクイズで英語フレーズを楽しく学習！毎日更新される実用フレーズで英会話力アップ。',
-  keywords: ['英語学習', '英会話', 'フレーズ', '例文', 'クイズ', 'Daily English'],
+  title: '【無料】毎日1フレーズ英語学習 - Daily English Snap',
+  description: '毎日届く英語フレーズを穴埋めクイズで楽しく学習。1日1分、スキマ時間で英会話力アップ！初心者から社会人まで使える実用フレーズを無料で配信中。',
+  keywords: ['英語学習', '英会話', 'フレーズ', '例文', 'クイズ', 'Daily English', '英語 アプリ', '英語学習 サイト', '英語 勉強 無料', '1日1分 英語', 'スキマ時間 英語', '英語フレーズ 毎日'],
   verification: {
     google: '_0bILKnQoufY0oJ-FQRkW3KdJDtCOXls3NW5LWgjOvU',
   },
   metadataBase: new URL('https://english.news-navi.jp'),
   openGraph: {
-    title: 'Daily English Snap - 毎日届く実用英語フレーズ',
-    description: '穴埋めクイズで英語フレーズを楽しく学習！毎日更新される実用フレーズで英会話力アップ。',
+    title: '【無料】毎日1フレーズ英語学習 - Daily English Snap',
+    description: '毎日届く英語フレーズを穴埋めクイズで楽しく学習。1日1分、スキマ時間で英会話力アップ！初心者から社会人まで使える実用フレーズを無料で配信中。',
     url: 'https://english.news-navi.jp',
     siteName: 'Daily English Snap',
     locale: 'ja_JP',
@@ -29,8 +29,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Daily English Snap - 毎日届く実用英語フレーズ',
-    description: '穴埋めクイズで英語フレーズを楽しく学習！毎日更新される実用フレーズで英会話力アップ。',
+    title: '【無料】毎日1フレーズ英語学習 - Daily English Snap',
+    description: '毎日届く英語フレーズを穴埋めクイズで楽しく学習。1日1分、スキマ時間で英会話力アップ！初心者から社会人まで使える実用フレーズを無料で配信中。',
   },
 }
 
@@ -92,6 +92,44 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={inter.className}>
+        {/* 構造化データ (JSON-LD) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "Daily English Snap",
+              "alternateName": ["デイリーイングリッシュスナップ", "英語スナップ"],
+              "url": "https://english.news-navi.jp",
+              "description": "毎日届く英語フレーズを穴埋めクイズで楽しく学習。1日1分、スキマ時間で英会話力アップ！",
+              "inLanguage": "ja",
+              "publisher": {
+                "@type": "Organization",
+                "name": "E-edu"
+              },
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://english.news-navi.jp/archive?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "EducationalOrganization",
+              "name": "Daily English Snap",
+              "url": "https://english.news-navi.jp",
+              "description": "無料の英語フレーズ学習サイト。毎日1フレーズを穴埋めクイズで配信。",
+              "areaServed": "JP",
+              "availableLanguage": ["ja", "en"]
+            })
+          }}
+        />
         <div className="min-h-screen flex flex-col bg-[#fafaf9]">
           <Header />
 
