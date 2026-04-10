@@ -37,12 +37,13 @@ const supabase = createClient(
 );
 
 /**
- * フレーズを穴埋め形式に変換
+ * フレーズを穴埋め形式に変換（単語の文字数分の_）
  */
 function createBlankPhrase(phrase, blankWord) {
   // 大文字小文字を無視して置換
   const regex = new RegExp(blankWord, 'gi');
-  return phrase.replace(regex, '______');
+  const blank = '_'.repeat(blankWord.length);
+  return phrase.replace(regex, blank);
 }
 
 /**

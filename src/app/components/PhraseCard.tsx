@@ -675,9 +675,9 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                     shareUrl += `?${params.toString()}`
                   }
 
-                  // 穴埋め形式のフレーズを作成
+                  // 穴埋め形式のフレーズを作成（単語の文字数分の_）
                   const blankPhrase = phrase.blankWord
-                    ? phrase.phrase.replace(new RegExp(phrase.blankWord, 'gi'), '______')
+                    ? phrase.phrase.replace(new RegExp(phrase.blankWord, 'gi'), '_'.repeat(phrase.blankWord.length))
                     : phrase.phrase
 
                   const text = `【今日の英語クイズ - ${LEVEL_CONFIG[level].label}】\n\n「${blankPhrase}」\n（${phrase.meaning}）\n\n空欄に入る単語は？\nわかったら♡\n\n`
