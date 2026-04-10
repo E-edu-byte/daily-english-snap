@@ -30,7 +30,23 @@ for (const envVar of requiredEnvVars) {
 
 // Gemini API の初期化
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+// モデル一覧（優先順位順）- 1つ目が失敗したら2つ目を試す
+const MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+let currentModelIndex = 0;
+
+function getModel() {
+  return genAI.getGenerativeModel({ model: MODELS[currentModelIndex] });
+}
+
+function switchToNextModel() {
+  if (currentModelIndex < MODELS.length - 1) {
+    currentModelIndex++;
+    console.log(`🔄 Switching to fallback model: ${MODELS[currentModelIndex]}`);
+    return true;
+  }
+  return false;
+}
 
 // Supabase の初期化
 const supabase = createClient(
@@ -242,7 +258,8 @@ async function generateContent(existingPhrases = [], existingProverbs = [], maxR
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`🔄 Attempt ${attempt}/${maxRetries}...`);
+      const model = getModel();
+      console.log(`🔄 Attempt ${attempt}/${maxRetries} with ${MODELS[currentModelIndex]}...`);
       const result = await model.generateContent(prompt);
       const response = result.response;
       const text = response.text();
@@ -308,6 +325,10 @@ async function generateContent(existingPhrases = [], existingProverbs = [], maxR
         const waitTime = Math.pow(2, attempt) * 10; // 20秒, 40秒, 80秒, 160秒...
         console.warn(`⚠️  API temporarily unavailable (${error.status || 'error'}). Retrying in ${waitTime} seconds...`);
         await sleep(waitTime * 1000);
+      } else if (isRetryable && switchToNextModel()) {
+        // 現在のモデルで全リトライ失敗 → フォールバックモデルで再試行
+        console.log('🔄 Retrying with fallback model...');
+        return generateContent(existingPhrases, existingProverbs, maxRetries);
       } else {
         console.error('❌ Error generating content:', error.message);
         throw error;
