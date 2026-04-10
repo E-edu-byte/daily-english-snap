@@ -675,8 +675,13 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                     shareUrl += `?${params.toString()}`
                   }
 
-                  const text = `１日１回英語フレーズを学ぼう\n【${LEVEL_CONFIG[level].label}】レベルに挑戦！\n格言もあるよ！\n\n`
-                  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}&hashtags=DailyEnglishSnap,英語学習,毎日,朝活,コツコツ`
+                  // 穴埋め形式のフレーズを作成
+                  const blankPhrase = phrase.blankWord
+                    ? phrase.phrase.replace(new RegExp(phrase.blankWord, 'gi'), '______')
+                    : phrase.phrase
+
+                  const text = `【今日の英語クイズ - ${LEVEL_CONFIG[level].label}】\n\n「${blankPhrase}」\n（${phrase.meaning}）\n\n空欄に入る単語は？\n\n正解したら🙋\n惜しかったら😅\n\n`
+                  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}&hashtags=英語学習,英会話,1日1分英語`
                 })()}
                 target="_blank"
                 rel="noopener noreferrer"
