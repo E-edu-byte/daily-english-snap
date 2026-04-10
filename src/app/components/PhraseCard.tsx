@@ -680,7 +680,7 @@ export default function PhraseCard({ phrase, date, level = DEFAULT_LEVEL }: Phra
                     ? phrase.phrase.replace(new RegExp(phrase.blankWord, 'gi'), '______')
                     : phrase.phrase
 
-                  const text = `【今日の英語クイズ - ${LEVEL_CONFIG[level].label}】\n\n「${blankPhrase}」\n（${phrase.meaning}）\n\n空欄に入る単語は？\n\n正解したら🙋\n惜しかったら😅\n\n`
+                  const text = `【今日の英語クイズ - ${LEVEL_CONFIG[level].label}】\n\n「${blankPhrase}」\n（${phrase.meaning}）\n\n空欄に入る単語は？\nわかったら♡\n\n`
                   return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}&hashtags=英語学習,英会話,1日1分英語`
                 })()}
                 target="_blank"

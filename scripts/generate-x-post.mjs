@@ -67,8 +67,7 @@ function generateXPost(phraseData, date, level) {
 空欄に入る単語は？
 → ${url}
 
-正解したら🙋
-惜しかったら😅
+わかったら♡
 
 #英語学習 #英会話 #1日1分英語 ${levelHashtags}`;
 
@@ -93,7 +92,7 @@ function generateXPostWithProverb(phraseData, date, level) {
 空欄に入る単語は？
 → ${url}
 
-正解したら🙋 惜しかったら😅
+わかったら♡
 
 ---
 ${phraseData.proverb_english}
