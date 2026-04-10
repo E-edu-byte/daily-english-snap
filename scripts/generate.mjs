@@ -32,7 +32,7 @@ for (const envVar of requiredEnvVars) {
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // モデル一覧（優先順位順）- 1つ目が失敗したら2つ目を試す
-const MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
 let currentModelIndex = 0;
 
 function getModel() {
