@@ -47,9 +47,13 @@ export default function DoneButton({ phraseId, date, level = DEFAULT_LEVEL }: Do
   const [isDone, setIsDone] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
 
-  // 対象の日付を取得
+  // 対象の日付を取得（JST基準）
   const getTargetDate = () => {
-    return date || new Date().toISOString().split('T')[0]
+    if (date) return date
+    // JSTで今日の日付を取得
+    const now = new Date()
+    const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+    return jst.toISOString().split('T')[0]
   }
 
   // LocalStorageから学習記録を読み込み
