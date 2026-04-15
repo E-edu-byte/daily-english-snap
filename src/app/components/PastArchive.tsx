@@ -77,13 +77,23 @@ function createBlankPhrase(phrase: string, blankWord: string): string {
   return phrase.replace(blankWord, '???')
 }
 
-// 過去N日間の日付を取得（サービス開始日以降のみ）
+// JSTの今日の日付を取得
+function getTodayJST(): Date {
+  const now = new Date()
+  // JSTオフセット（+9時間）を適用した日付を作成
+  const jstTime = now.getTime() + 9 * 60 * 60 * 1000
+  const jstDate = new Date(jstTime)
+  // 年月日のみを持つDateオブジェクトを返す（UTCとして扱う）
+  return new Date(Date.UTC(jstDate.getUTCFullYear(), jstDate.getUTCMonth(), jstDate.getUTCDate()))
+}
+
+// 過去N日間の日付を取得（サービス開始日以降のみ、JST基準）
 function getPastDates(days: number) {
   const dates = []
-  const today = new Date()
+  const todayJST = getTodayJST()
   for (let i = 1; i <= days; i++) {
-    const date = new Date(today)
-    date.setDate(today.getDate() - i)
+    const date = new Date(todayJST)
+    date.setUTCDate(todayJST.getUTCDate() - i)
     // サービス開始日以降のみ追加
     if (isServiceAvailable(date)) {
       dates.push(date)
@@ -173,7 +183,9 @@ export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_
   }, [selectedLevel])
 
   const formatDate = (date: Date) => {
+    // JST基準で表示
     return date.toLocaleDateString('ja-JP', {
+      timeZone: 'Asia/Tokyo',
       month: 'long',
       day: 'numeric',
       weekday: 'short'
@@ -181,9 +193,10 @@ export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_
   }
 
   const formatDateForUrl = (date: Date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
+    // JST基準の日付をUTCとして扱っているので、UTCメソッドを使用
+    const year = date.getUTCFullYear()
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+    const day = String(date.getUTCDate()).padStart(2, '0')
     return `${year}-${month}-${day}`
   }
 

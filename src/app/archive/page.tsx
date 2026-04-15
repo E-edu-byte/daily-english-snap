@@ -6,19 +6,30 @@ import Link from 'next/link'
 import { ArrowLeft, Calendar, CheckCircle2, Circle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Lora } from 'next/font/google'
 import LevelTabs from '../components/LevelTabs'
-import { Level, DEFAULT_LEVEL, isValidLevel, isServiceAvailable, SERVICE_START_DATE } from '../types'
+import { Level, DEFAULT_LEVEL, isValidLevel, isServiceAvailable, SERVICE_START_YEAR, SERVICE_START_MONTH, SERVICE_START_DAY } from '../types'
 
 const lora = Lora({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
 
 const ITEMS_PER_PAGE = 10
 
-// サービス開始日からの最大日数を計算
+// JSTの今日の日付を取得
+function getTodayJST(): { year: number; month: number; day: number } {
+  const now = new Date()
+  const jstTime = now.getTime() + 9 * 60 * 60 * 1000
+  const jstDate = new Date(jstTime)
+  return {
+    year: jstDate.getUTCFullYear(),
+    month: jstDate.getUTCMonth(),
+    day: jstDate.getUTCDate()
+  }
+}
+
+// サービス開始日からの最大日数を計算（JST基準）
 function getMaxDays(): number {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const startDate = new Date(SERVICE_START_DATE)
-  startDate.setHours(0, 0, 0, 0)
-  const diffTime = today.getTime() - startDate.getTime()
+  const todayJST = getTodayJST()
+  const todayDate = new Date(Date.UTC(todayJST.year, todayJST.month, todayJST.day))
+  const startDate = new Date(Date.UTC(SERVICE_START_YEAR, SERVICE_START_MONTH, SERVICE_START_DAY))
+  const diffTime = todayDate.getTime() - startDate.getTime()
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
   return Math.max(0, diffDays) // 今日は含まないので、昨日までの日数
 }
@@ -91,13 +102,14 @@ function createBlankPhrase(phrase: string, blankWord: string): string {
   return phrase.replace(blankWord, '???')
 }
 
-// 過去の日付を取得（開始位置から指定件数、サービス開始日以降のみ）
+// 過去の日付を取得（開始位置から指定件数、サービス開始日以降のみ、JST基準）
 function getPastDates(startIndex: number, count: number, maxDays: number) {
   const dates = []
-  const today = new Date()
+  const todayJST = getTodayJST()
+  const todayDate = new Date(Date.UTC(todayJST.year, todayJST.month, todayJST.day))
   for (let i = startIndex; i < startIndex + count && i < maxDays; i++) {
-    const date = new Date(today)
-    date.setDate(today.getDate() - (i + 1)) // +1 because we start from yesterday
+    const date = new Date(todayDate)
+    date.setUTCDate(todayDate.getUTCDate() - (i + 1)) // +1 because we start from yesterday
     // サービス開始日以降のみ追加
     if (isServiceAvailable(date)) {
       dates.push(date)
@@ -148,9 +160,10 @@ function ArchiveContent() {
   const [doneStates, setDoneStates] = useState<Record<string, boolean>>({})
 
   const formatDateForUrl = (date: Date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
+    // JST基準の日付をUTCとして扱っているので、UTCメソッドを使用
+    const year = date.getUTCFullYear()
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+    const day = String(date.getUTCDate()).padStart(2, '0')
     return `${year}-${month}-${day}`
   }
 
@@ -180,7 +193,9 @@ function ArchiveContent() {
   }, [selectedLevel, currentPage])
 
   const formatDate = (date: Date) => {
+    // JST基準で表示
     return date.toLocaleDateString('ja-JP', {
+      timeZone: 'Asia/Tokyo',
       month: 'long',
       day: 'numeric',
       weekday: 'short'

@@ -31,6 +31,18 @@ function normalizeRecord(value: RecordValue): NewRecordFormat {
   }
 }
 
+// JSTの現在時刻から年月日を取得
+function getJSTDate(): { year: number; month: number; day: number } {
+  const now = new Date()
+  const jstTime = now.getTime() + 9 * 60 * 60 * 1000
+  const jstDate = new Date(jstTime)
+  return {
+    year: jstDate.getUTCFullYear(),
+    month: jstDate.getUTCMonth(),
+    day: jstDate.getUTCDate()
+  }
+}
+
 interface LearningCalendarProps {
   initialLevel?: Level
 }
@@ -125,11 +137,11 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
     return fillInRecords[dateStr] === true
   }
 
-  // 今日かどうかチェック
+  // 今日かどうかチェック（JST基準）
   const isToday = (day: number | null) => {
     if (!day) return false
-    const today = new Date()
-    return day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
+    const todayJST = getJSTDate()
+    return day === todayJST.day && month === todayJST.month && year === todayJST.year
   }
 
   // 日付のURLを生成（レベルパラメータ付き）
@@ -141,19 +153,23 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
     return `/archive/${dateStr}?level=${selectedLevel}`
   }
 
-  // 未来の日付かどうかチェック
+  // 未来の日付かどうかチェック（JST基準）
   const isFutureDate = (day: number | null) => {
     if (!day) return false
-    const checkDate = new Date(year, month, day)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return checkDate > today
+    const todayJST = getJSTDate()
+    // カレンダーの日付とJSTの今日を比較
+    if (year > todayJST.year) return true
+    if (year < todayJST.year) return false
+    if (month > todayJST.month) return true
+    if (month < todayJST.month) return false
+    return day > todayJST.day
   }
 
   // サービス開始前の日付かどうかチェック
   const isBeforeServiceStart = (day: number | null) => {
     if (!day) return false
-    const checkDate = new Date(year, month, day)
+    // UTCとして日付を作成（isServiceAvailableに渡す用）
+    const checkDate = new Date(Date.UTC(year, month, day))
     return !isServiceAvailable(checkDate)
   }
 
