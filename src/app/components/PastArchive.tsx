@@ -173,11 +173,28 @@ export default function PastArchive({ pastPhrases = {}, selectedLevel = DEFAULT_
       loadFillInStates()
     }
 
+    // ページがアクティブになった時に再読み込み（キャッシュ対策）
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadDoneStates()
+        loadFillInStates()
+      }
+    }
+    const handleFocus = () => {
+      loadDoneStates()
+      loadFillInStates()
+    }
+
     window.addEventListener('learningRecordsUpdated', handleUpdate)
     window.addEventListener('fillInRecordsUpdated', handleFillInUpdate)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
     return () => {
       window.removeEventListener('learningRecordsUpdated', handleUpdate)
       window.removeEventListener('fillInRecordsUpdated', handleFillInUpdate)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLevel])

@@ -91,11 +91,29 @@ export default function LearningCalendar({ initialLevel = DEFAULT_LEVEL }: Learn
     // カスタムイベントをリッスンして更新
     const handleUpdate = () => loadRecords()
     const handleFillInUpdate = () => loadFillInRecords()
+
+    // ページがアクティブになった時に再読み込み（キャッシュ対策）
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadRecords()
+        loadFillInRecords()
+      }
+    }
+    const handleFocus = () => {
+      loadRecords()
+      loadFillInRecords()
+    }
+
     window.addEventListener('learningRecordsUpdated', handleUpdate)
     window.addEventListener('fillInRecordsUpdated', handleFillInUpdate)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
     return () => {
       window.removeEventListener('learningRecordsUpdated', handleUpdate)
       window.removeEventListener('fillInRecordsUpdated', handleFillInUpdate)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
     }
   }, [])
 
